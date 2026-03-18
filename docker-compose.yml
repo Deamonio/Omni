@@ -1,0 +1,623 @@
+services:
+
+  student01:
+    image: flask-mysql-ssh
+    container_name: student01
+    ports:
+      - "21125:22"
+      - "31125:5000"
+      - "41125:3306"
+      - "51125:7681"
+    environment:
+      - STUDENT_ID=s2501125
+      - USER_PASS=nomto
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501125:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student02:
+    image: flask-mysql-ssh
+    container_name: student02
+    ports:
+      - "21111:22"
+      - "31111:5000"
+      - "41111:3306"
+      - "51111:7681"
+    environment:
+      - STUDENT_ID=s2501111
+      - USER_PASS=maurocontrerasrivera
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501111:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student03:
+    image: flask-mysql-ssh
+    container_name: student03
+    ports:
+      - "21901:22"
+      - "31901:5000"
+      - "41901:3306"
+      - "51901:7681"
+    environment:
+      - STUDENT_ID=s2201901
+      - USER_PASS=2201901aia
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2201901:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student04:
+    image: flask-mysql-ssh
+    container_name: student04
+    ports:
+      - "21115:22"
+      - "31115:5000"
+      - "41115:3306"
+      - "51115:7681"
+    environment:
+      - STUDENT_ID=s2501115
+      - USER_PASS=ilsusuzanuyanik26
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501115:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student05:
+    image: flask-mysql-ssh
+    container_name: student05
+    ports:
+      - "21301:22"
+      - "31301:5000"
+      - "41301:3306"
+      - "51301:7681"
+    environment:
+      - STUDENT_ID=s2301301
+      - USER_PASS=moonsung121200
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301301:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student06:
+    image: flask-mysql-ssh
+    container_name: student06
+    ports:
+      - "21003:22"
+      - "31003:5000"
+      - "41003:3306"
+      - "51003:7681"
+    environment:
+      - STUDENT_ID=s2501003
+      - USER_PASS=sjwwa951
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501003:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student07:
+    image: flask-mysql-ssh
+    container_name: student07
+    ports:
+      - "21104:22"
+      - "31104:5000"
+      - "41104:3306"
+      - "51104:7681"
+    environment:
+      - STUDENT_ID=s2301104
+      - USER_PASS=kkm9514269
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301104:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student08:
+    image: flask-mysql-ssh
+    container_name: student08
+    ports:
+      - "21403:22"
+      - "31403:5000"
+      - "41403:3306"
+      - "51403:7681"
+    environment:
+      - STUDENT_ID=s2201403
+      - USER_PASS=baby3565
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2201403:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student09:
+    image: flask-mysql-ssh
+    container_name: student09
+    ports:
+      - "21112:22"
+      - "31112:5000"
+      - "41112:3306"
+      - "51112:7681"
+    environment:
+      - STUDENT_ID=s2301112
+      - USER_PASS=rlawlsgud2438
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301112:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student10:
+    image: flask-mysql-ssh
+    container_name: student10
+    ports:
+      - "21113:22"
+      - "31113:5000"
+      - "41113:3306"
+      - "51113:7681"
+    environment:
+      - STUDENT_ID=s2301113
+      - USER_PASS=chanmin9689
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301113:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student11:
+    image: flask-mysql-ssh
+    container_name: student11
+    ports:
+      - "21080:22"
+      - "31080:5000"
+      - "41080:3306"
+      - "51080:7681"
+    environment:
+      - STUDENT_ID=s2501080
+      - USER_PASS=choyeon-mun
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501080:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student12:
+    image: flask-mysql-ssh
+    container_name: student12
+    ports:
+      - "21206:22"
+      - "31206:5000"
+      - "41206:3306"
+      - "51206:7681"
+    environment:
+      - STUDENT_ID=s2301206
+      - USER_PASS=goldbong74
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301206:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student13:
+    image: flask-mysql-ssh
+    container_name: student13
+    ports:
+      - "21306:22"
+      - "31306:5000"
+      - "41306:3306"
+      - "51306:7681"
+    environment:
+      - STUDENT_ID=s2301306
+      - USER_PASS=pjspjs04
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301306:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student14:
+    image: flask-mysql-ssh
+    container_name: student14
+    ports:
+      - "21089:22"
+      - "31089:5000"
+      - "41089:3306"
+      - "51089:7681"
+    environment:
+      - STUDENT_ID=s2501089
+      - USER_PASS=star88222
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501089:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student15:
+    image: flask-mysql-ssh
+    container_name: student15
+    ports:
+      - "21090:22"
+      - "31090:5000"
+      - "41090:3306"
+      - "51090:7681"
+    environment:
+      - STUDENT_ID=s2501090
+      - USER_PASS=hwanarchive
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501090:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student16:
+    image: flask-mysql-ssh
+    container_name: student16
+    ports:
+      - "21209:22"
+      - "31209:5000"
+      - "41209:3306"
+      - "51209:7681"
+    environment:
+      - STUDENT_ID=s2301209
+      - USER_PASS=0425seok
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301209:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student17:
+    image: flask-mysql-ssh
+    container_name: student17
+    ports:
+      - "21123:22"
+      - "31123:5000"
+      - "41123:3306"
+      - "51123:7681"
+    environment:
+      - STUDENT_ID=s2301123
+      - USER_PASS=younhnoo0325
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301123:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student18:
+    image: flask-mysql-ssh
+    container_name: student18
+    ports:
+      - "21045:22"
+      - "31045:5000"
+      - "41045:3306"
+      - "51045:7681"
+    environment:
+      - STUDENT_ID=s2501045
+      - USER_PASS=sjdisjsjs90
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501045:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student19:
+    image: flask-mysql-ssh
+    container_name: student19
+    ports:
+      - "21129:22"
+      - "31129:5000"
+      - "41129:3306"
+      - "51129:7681"
+    environment:
+      - STUDENT_ID=s2301129
+      - USER_PASS=l90670847
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301129:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student20:
+    image: flask-mysql-ssh
+    container_name: student20
+    ports:
+      - "21058:22"
+      - "31058:5000"
+      - "41058:3306"
+      - "51058:7681"
+    environment:
+      - STUDENT_ID=s2501058
+      - USER_PASS=a46750309
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501058:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student21:
+    image: flask-mysql-ssh
+    container_name: student21
+    ports:
+      - "21059:22"
+      - "31059:5000"
+      - "41059:3306"
+      - "51059:7681"
+    environment:
+      - STUDENT_ID=s2501059
+      - USER_PASS=kyalkwlww1
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501059:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student22:
+    image: flask-mysql-ssh
+    container_name: student22
+    ports:
+      - "21061:22"
+      - "31061:5000"
+      - "41061:3306"
+      - "51061:7681"
+    environment:
+      - STUDENT_ID=s2401061
+      - USER_PASS=goxodpdltm
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2401061:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student23:
+    image: flask-mysql-ssh
+    container_name: student23
+    ports:
+      - "21130:22"
+      - "31130:5000"
+      - "41130:3306"
+      - "51130:7681"
+    environment:
+      - STUDENT_ID=s2201130
+      - USER_PASS=dlgmltjd3353
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2201130:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student24:
+    image: flask-mysql-ssh
+    container_name: student24
+    ports:
+      - "21092:22"
+      - "31092:5000"
+      - "41092:3306"
+      - "51092:7681"
+    environment:
+      - STUDENT_ID=s2501092
+      - USER_PASS=hanbyul0623
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501092:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student25:
+    image: flask-mysql-ssh
+    container_name: student25
+    ports:
+      - "21136:22"
+      - "31136:5000"
+      - "41136:3306"
+      - "51136:7681"
+    environment:
+      - STUDENT_ID=s2301136
+      - USER_PASS=koojin0708
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2301136:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student26:
+    image: flask-mysql-ssh
+    container_name: student26
+    ports:
+      - "21085:22"
+      - "31085:5000"
+      - "41085:3306"
+      - "51085:7681"
+    environment:
+      - STUDENT_ID=s2501085
+      - USER_PASS=snsynu
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501085:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student27:
+    image: flask-mysql-ssh
+    container_name: student27
+    ports:
+      - "21073:22"
+      - "31073:5000"
+      - "41073:3306"
+      - "51073:7681"
+    environment:
+      - STUDENT_ID=s2501073
+      - USER_PASS=minb55
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501073:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student28:
+    image: flask-mysql-ssh
+    container_name: student28
+    ports:
+      - "21076:22"
+      - "31076:5000"
+      - "41076:3306"
+      - "51076:7681"
+    environment:
+      - STUDENT_ID=s2501076
+      - USER_PASS=yeonjun0103
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/2501076:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  student29:
+    image: flask-mysql-ssh
+    container_name: student29
+    ports:
+      - "20000:22"
+      - "30000:5000"
+      - "40000:3306"
+      - "50000:7681"
+    environment:
+      - STUDENT_ID=s0000000
+      - USER_PASS=test1234
+      - DB_ROOT_PASS=admin1234
+    volumes:
+      - ./students/0000000:/var/www/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: always
+
+  dashboard:
+    image: flask-mysql-ssh
+    container_name: dashboard
+    ports:
+      - "80:80"
+    volumes:
+      - ./dashboard:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app
+    command: python -u app.py
+    user: root
+    restart: always
