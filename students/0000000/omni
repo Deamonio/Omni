@@ -1,0 +1,813 @@
+#!/usr/bin/env python3
+"""omni - Omni System Admin CLI
+
+Usage:
+    omni list
+    omni create <name> <s학번> <password>
+    omni destroy <slot|학번|s학번>
+    omni passwd <slot|학번|s학번> <newpass>
+    omni assign <slot> <name> <s학번> <password>
+    omni id <slot|학번|s학번> <s학번>
+    omni del <slot|학번|s학번>
+    omni ps
+
+Notes:
+    - 학생 로그인 ID는 반드시 s학번 형식이어야 합니다. (예: s2501125)
+    - create/assign/id 실행 시 아래 항목을 자동 동기화합니다.
+        students.json, docker-compose 포트/환경변수/볼륨, sshpiper 파이프, NPM 프록시 도메인(SSL 포함)
+"""
+
+from __future__ import annotations
+
+import getpass
+import json
+import os
+import re
+import sqlite3
+import subprocess
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+STUDENTS_JSON = Path("/dashboard_data/students.json")
+PIPES_DIR = Path("/sshpiper_pipes")
+ROOT_DIR = Path("/omni_root")
+COMPOSE_FILE = ROOT_DIR / "docker-compose.yml"
+STUDENTS_DIR = ROOT_DIR / "students"
+MYSQL_ROOT_PASS = "admin1234"
+
+NPM_URL = "http://npm:81"
+DOMAIN_SUFFIX = "robotandi.deamon.io"
+ADMIN_SLOT = 29
+LOGIN_ID_RE = re.compile(r"^s\d{7}$")
+PORT_LINE_RE = re.compile(r'^\s*-\s*"(?P<host>\d+):(?P<container>\d+)"')
+
+
+def die(msg: str) -> None:
+    print(f"❌ {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def run(cmd: str, *, input_text: str | None = None, check: bool = True) -> subprocess.CompletedProcess:
+    effective_cmd = cmd
+    # omni 계정에서 docker.sock 권한이 없을 수 있으므로 docker 명령은 sudo로 자동 승격
+    if cmd.strip().startswith("docker ") and os.geteuid() != 0:
+        effective_cmd = f"sudo {cmd}"
+
+    result = subprocess.run(effective_cmd, shell=True, capture_output=True, text=True, input=input_text)
+    if check and result.returncode != 0:
+        err = (result.stderr or result.stdout).strip()
+        raise RuntimeError(f"Command failed: {effective_cmd}\n{err}")
+    return result
+
+
+def load() -> list[dict]:
+    with open(STUDENTS_JSON, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save(data: list[dict]) -> None:
+    tmp = STUDENTS_JSON.with_suffix(".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    tmp.rename(STUDENTS_JSON)
+
+
+def login_id_of(student: dict) -> str:
+    if student.get("login_id"):
+        return student["login_id"]
+    sid = student.get("id", "")
+    return f"s{sid}" if sid else ""
+
+
+def validate_login_id(login_id: str) -> tuple[str, str]:
+    if not LOGIN_ID_RE.match(login_id):
+        die(f"학생 ID는 s학번 형식이어야 합니다. 예: s2501125 (입력값: {login_id})")
+    return login_id, login_id[1:]
+
+
+def find_student(data: list[dict], key: str) -> dict | None:
+    key = key.strip()
+    if key.isdigit() and int(key) >= 1:
+        slot = int(key)
+        return next((s for s in data if s["slot"] == slot), None)
+
+    if LOGIN_ID_RE.match(key):
+        sid = key[1:]
+        return next((s for s in data if s.get("id") == sid or login_id_of(s) == key), None)
+
+    if key.isdigit() and len(key) == 7:
+        return next((s for s in data if s.get("id") == key), None)
+
+    return None
+
+
+def container(slot: int) -> str:
+    return f"student{slot:02d}"
+
+
+def container_running(slot: int) -> bool:
+    r = run(f"docker inspect -f '{{{{.State.Running}}}}' {container(slot)}", check=False)
+    return r.returncode == 0 and r.stdout.strip() == "true"
+
+
+def expected_ports(student_no: str) -> tuple[str, str, str, str]:
+    last4 = student_no[-4:]
+    return (f"2{last4}", f"3{last4}", f"4{last4}", f"5{last4}")
+
+
+def compose_host_ports() -> dict[int, str]:
+    ports = {}
+    current_service = None
+    for line in COMPOSE_FILE.read_text(encoding="utf-8").splitlines():
+        if line.startswith("  ") and not line.startswith("    ") and line.strip().endswith(":"):
+            current_service = line.strip()[:-1]
+            continue
+
+        match = PORT_LINE_RE.match(line)
+        if match and current_service:
+            ports[int(match.group("host"))] = current_service
+    return ports
+
+
+def next_slot(data: list[dict]) -> int:
+    slots = [s["slot"] for s in data]
+    return (max(slots) + 1) if slots else 1
+
+
+def pipe_dir(login_id: str) -> Path:
+    return PIPES_DIR / login_id
+
+
+def delete_pipe(login_id: str) -> None:
+    d = pipe_dir(login_id)
+    if not d.exists():
+        return
+    for f in d.iterdir():
+        f.unlink()
+    d.rmdir()
+
+
+def write_pipe(slot: int, login_id: str) -> None:
+    d = pipe_dir(login_id)
+    d.mkdir(mode=0o755, parents=True, exist_ok=True)
+    upstream = d / "sshpiper_upstream"
+    upstream.write_text(f"{login_id}@{container(slot)}:22\n")
+    upstream.chmod(0o400)
+
+
+def update_compose_service(slot: int, login_id: str, student_no: str, password: str) -> None:
+    if not COMPOSE_FILE.exists():
+        die(f"compose 파일이 없습니다: {COMPOSE_FILE}")
+
+    p_ssh, p_web, p_db, p_tty = expected_ports(student_no)
+    svc = container(slot)
+    lines = COMPOSE_FILE.read_text(encoding="utf-8").splitlines(keepends=True)
+
+    start = None
+    end = None
+    for i, line in enumerate(lines):
+        if line.strip() == f"{svc}:" and line.startswith("  "):
+            start = i
+            break
+    if start is None:
+        die(f"compose에서 서비스 {svc}를 찾지 못했습니다")
+
+    for i in range(start + 1, len(lines)):
+        if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip().endswith(":"):
+            end = i
+            break
+    if end is None:
+        end = len(lines)
+
+    block = lines[start:end]
+    in_ports = in_env = in_vol = False
+    out = []
+    for ln in block:
+        stripped = ln.strip()
+        if stripped == "ports:":
+            in_ports, in_env, in_vol = True, False, False
+            out.append(ln)
+            continue
+        if stripped == "environment:":
+            in_ports, in_env, in_vol = False, True, False
+            out.append(ln)
+            continue
+        if stripped == "volumes:":
+            in_ports, in_env, in_vol = False, False, True
+            out.append(ln)
+            continue
+        if stripped.endswith(":") and not ln.startswith("      -") and stripped not in {"ports:", "environment:", "volumes:"}:
+            in_ports = in_env = in_vol = False
+
+        if in_ports and ln.startswith("      - "):
+            if ":22\"" in ln:
+                out.append(f"      - \"{p_ssh}:22\"\n")
+                continue
+            if ":5000\"" in ln:
+                out.append(f"      - \"{p_web}:5000\"\n")
+                continue
+            if ":3306\"" in ln:
+                out.append(f"      - \"{p_db}:3306\"\n")
+                continue
+            if ":7681\"" in ln:
+                out.append(f"      - \"{p_tty}:7681\"\n")
+                continue
+
+        if in_env and ln.startswith("      - STUDENT_ID="):
+            out.append(f"      - STUDENT_ID={login_id}\n")
+            continue
+        if in_env and ln.startswith("      - USER_PASS="):
+            out.append(f"      - USER_PASS={password}\n")
+            continue
+
+        if in_vol and ln.startswith("      - ./students/") and ":/home/" in ln:
+            out.append(f"      - ./students/{student_no}:/home/{login_id}\n")
+            continue
+        if in_vol and ln.startswith("      - ./shared:/home/") and "/shared:ro" in ln:
+            out.append(f"      - ./shared:/home/{login_id}/shared:ro\n")
+            continue
+
+        out.append(ln)
+
+    lines[start:end] = out
+    COMPOSE_FILE.write_text("".join(lines), encoding="utf-8")
+
+
+def compose_block(slot: int, login_id: str, student_no: str, password: str) -> str:
+    p_ssh, p_web, p_db, p_tty = expected_ports(student_no)
+    return (
+        f"\n  {container(slot)}:\n"
+        "    image: flask-mysql-ssh\n"
+        f"    container_name: {container(slot)}\n"
+        "    ports:\n"
+        f"      - \"{p_ssh}:22\"\n"
+        f"      - \"{p_web}:5000\"\n"
+        f"      - \"{p_db}:3306\"\n"
+        f"      - \"{p_tty}:7681\"\n"
+        "    environment:\n"
+        f"      - STUDENT_ID={login_id}\n"
+        f"      - USER_PASS={password}\n"
+        "      - DB_ROOT_PASS=admin1234\n"
+        "    volumes:\n"
+        f"      - ./students/{student_no}:/home/{login_id}\n"
+        f"      - ./shared:/home/{login_id}/shared:ro\n"
+        "    deploy:\n"
+        "      resources:\n"
+        "        limits:\n"
+        "          cpus: '0.5'\n"
+        "          memory: 512M\n"
+        "    restart: always\n"
+    )
+
+
+def append_compose_service(slot: int, login_id: str, student_no: str, password: str) -> None:
+    if not COMPOSE_FILE.exists():
+        die(f"compose 파일이 없습니다: {COMPOSE_FILE}")
+
+    content = COMPOSE_FILE.read_text(encoding="utf-8")
+    marker = "\n  dashboard:\n"
+    block = compose_block(slot, login_id, student_no, password)
+    if marker not in content:
+        die("compose에서 dashboard 섹션 위치를 찾지 못했습니다")
+    if f"\n  {container(slot)}:\n" in content:
+        die(f"이미 compose에 {container(slot)} 서비스가 존재합니다")
+    content = content.replace(marker, block + marker, 1)
+    COMPOSE_FILE.write_text(content, encoding="utf-8")
+
+
+def remove_compose_service(slot: int) -> None:
+    if not COMPOSE_FILE.exists():
+        die(f"compose 파일이 없습니다: {COMPOSE_FILE}")
+
+    svc = container(slot)
+    lines = COMPOSE_FILE.read_text(encoding="utf-8").splitlines(keepends=True)
+    start = None
+    end = None
+    for i, line in enumerate(lines):
+        if line.strip() == f"{svc}:" and line.startswith("  "):
+            start = i
+            break
+    if start is None:
+        return
+
+    for i in range(start + 1, len(lines)):
+        if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].strip().endswith(":"):
+            end = i
+            break
+    if end is None:
+        end = len(lines)
+
+    del lines[start:end]
+    COMPOSE_FILE.write_text("".join(lines), encoding="utf-8")
+
+
+def ensure_student_dir(old_no: str | None, new_no: str) -> None:
+    new_dir = STUDENTS_DIR / new_no
+    if new_dir.exists():
+        return
+    if old_no and (STUDENTS_DIR / old_no).exists() and old_no != new_no:
+        (STUDENTS_DIR / old_no).rename(new_dir)
+    else:
+        new_dir.mkdir(parents=True, exist_ok=True)
+
+
+def sync_db_account(
+    slot: int,
+    login_id: str,
+    password: str,
+    old_login_id: str | None = None,
+    create_new: bool = True,
+) -> None:
+    """컨테이너 내부 MySQL 계정을 로그인 ID/비밀번호와 동기화한다."""
+    if not container_running(slot):
+        print(f"  ⚠️  DB 동기화 건너뜀(컨테이너 중지): {container(slot)}")
+        return
+
+    statements = []
+    if old_login_id and old_login_id != login_id:
+        statements.extend([
+            f"DROP USER IF EXISTS '{old_login_id}'@'%';",
+            f"DROP USER IF EXISTS '{old_login_id}'@'127.0.0.1';",
+            f"DROP USER IF EXISTS '{old_login_id}'@'localhost';",
+        ])
+
+    if create_new:
+        statements.extend([
+            f"GRANT ALL PRIVILEGES ON *.* TO '{login_id}'@'%' IDENTIFIED BY '{password}' WITH GRANT OPTION;",
+            f"GRANT ALL PRIVILEGES ON *.* TO '{login_id}'@'127.0.0.1' IDENTIFIED BY '{password}' WITH GRANT OPTION;",
+            f"GRANT ALL PRIVILEGES ON *.* TO '{login_id}'@'localhost' IDENTIFIED BY '{password}' WITH GRANT OPTION;",
+        ])
+
+    statements.append("FLUSH PRIVILEGES;")
+
+    sql = "\n".join(statements)
+    result = run(
+        f"docker exec {container(slot)} mysql -u root -p{MYSQL_ROOT_PASS} -e \"{sql}\"",
+        check=False,
+    )
+    if result.returncode == 0:
+        print(f"  DB 계정 동기화 완료: {login_id}")
+    else:
+        err = (result.stderr or result.stdout).strip()
+        print(f"  ⚠️  DB 동기화 실패: {err}")
+
+
+def recreate_student_container(slot: int) -> None:
+    svc = container(slot)
+    host_root = host_path_for_omni_root()
+    # docker compose가 없는 환경에서도 적용할 수 있도록 compose 컨테이너로 실행
+    cmd = (
+        "docker run --rm "
+        "-v /var/run/docker.sock:/var/run/docker.sock "
+        f"-v {host_root}:/workspace -w /workspace "
+        "docker:26-cli docker compose -p omni up -d --force-recreate "
+        f"{svc}"
+    )
+    first = run(cmd, check=False)
+    if first.returncode == 0:
+        return
+
+    err = (first.stderr or first.stdout or "")
+    m = re.search(r'"/([^\"]+_student\d+)"', err)
+    if m:
+        stale = m.group(1)
+        run(f"docker rm -f {stale}", check=False)
+        second = run(cmd, check=False)
+        if second.returncode == 0:
+            return
+        err2 = (second.stderr or second.stdout).strip()
+        raise RuntimeError(f"compose 재시도 실패\n{err2}")
+
+    raise RuntimeError(err.strip() or "compose 재생성 실패")
+
+
+def host_path_for_omni_root() -> str:
+    r = run(
+        "docker inspect student29 --format '{{range .Mounts}}{{if eq .Destination \"/omni_root\"}}{{.Source}}{{end}}{{end}}'",
+        check=True,
+    )
+    path = r.stdout.strip()
+    if not path:
+        raise RuntimeError("student29에서 /omni_root host 경로를 찾지 못했습니다")
+    return path
+
+
+def npm_email_from_db() -> str:
+    db = ROOT_DIR / "npm/data/database.sqlite"
+    if not db.exists():
+        return ""
+    conn = sqlite3.connect(db)
+    try:
+        row = conn.execute("select email from user limit 1").fetchone()
+        return row[0] if row else ""
+    finally:
+        conn.close()
+
+
+def npm_request(method: str, path: str, token: str | None = None, payload: dict | None = None) -> dict | list:
+    data = None
+    headers = {"Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(f"{NPM_URL}{path}", data=data, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        body = resp.read().decode("utf-8")
+        return json.loads(body) if body else {}
+
+
+def npm_get_token() -> str:
+    npm_pass = None
+    r = run("printenv NPM_PASS", check=False)
+    if r.returncode == 0 and r.stdout.strip():
+        npm_pass = r.stdout.strip()
+    elif sys.stdin.isatty():
+        npm_pass = getpass.getpass("NPM 비밀번호(Proxy Manager): ").strip()
+
+    if not npm_pass:
+        raise RuntimeError("NPM_PASS 환경변수가 없고 인터랙티브 입력도 불가합니다")
+
+    email = npm_email_from_db() or "hyun0810d@gmail.com"
+    data = npm_request("POST", "/api/tokens", payload={"identity": email, "secret": npm_pass})
+    token = data.get("token")
+    if not token:
+        raise RuntimeError("NPM 토큰 발급 실패")
+    return token
+
+
+def npm_sync_domain(slot: int, old_student_no: str | None, old_login_id: str | None, new_login_id: str) -> None:
+    old_domains = []
+    if old_student_no:
+        old_domains.append(f"{old_student_no}.{DOMAIN_SUFFIX}")
+    if old_login_id:
+        old_domains.append(f"{old_login_id}.{DOMAIN_SUFFIX}")
+    new_domain = f"{new_login_id}.{DOMAIN_SUFFIX}"
+    svc = container(slot)
+
+    try:
+        token = npm_get_token()
+        hosts = npm_request("GET", "/api/nginx/proxy-hosts", token=token)
+    except Exception as e:
+        print(f"⚠️  NPM 동기화 건너뜀: {e}")
+        print("    필요 시 NPM_PASS를 설정한 뒤 다시 assign/id를 실행하세요.")
+        return
+
+    old_host = None
+    new_host = None
+    for h in hosts:
+        domains = h.get("domain_names") or []
+        if any(d in domains for d in old_domains):
+            old_host = h
+        if new_domain in domains:
+            new_host = h
+
+    if new_host:
+        print(f"  NPM 도메인 유지: {new_domain}")
+        return
+
+    if old_host:
+        payload = {
+            "domain_names": [new_domain],
+            "forward_scheme": old_host.get("forward_scheme", "http"),
+            "forward_host": svc,
+            "forward_port": 5000,
+            "access_list_id": old_host.get("access_list_id", 0),
+            "certificate_id": old_host.get("certificate_id", 0),
+            "ssl_forced": old_host.get("ssl_forced", 1),
+            "http2_support": old_host.get("http2_support", 1),
+            "block_exploits": old_host.get("block_exploits", 0),
+            "caching_enabled": old_host.get("caching_enabled", 0),
+            "allow_websocket_upgrade": old_host.get("allow_websocket_upgrade", 1),
+            "meta": old_host.get("meta", {"letsencrypt_agree": True, "dns_challenge": False}),
+        }
+        npm_request("PUT", f"/api/nginx/proxy-hosts/{old_host['id']}", token=token, payload=payload)
+        print(f"  NPM 도메인 변경: {', '.join(old_domains) or '(없음)'} -> {new_domain}")
+        return
+
+    payload = {
+        "domain_names": [new_domain],
+        "forward_scheme": "http",
+        "forward_host": svc,
+        "forward_port": 5000,
+        "access_list_id": 0,
+        "certificate_id": "new",
+        "ssl_forced": 1,
+        "http2_support": 1,
+        "block_exploits": 1,
+        "caching_enabled": 0,
+        "allow_websocket_upgrade": 1,
+        "meta": {"letsencrypt_agree": True, "dns_challenge": False},
+    }
+    npm_request("POST", "/api/nginx/proxy-hosts", token=token, payload=payload)
+    print(f"  NPM 도메인 생성+SSL: {new_domain}")
+
+
+def npm_delete_domains(student_no: str | None, login_id: str | None) -> None:
+    targets = []
+    if student_no:
+        targets.append(f"{student_no}.{DOMAIN_SUFFIX}")
+    if login_id:
+        targets.append(f"{login_id}.{DOMAIN_SUFFIX}")
+    if not targets:
+        return
+
+    try:
+        token = npm_get_token()
+        hosts = npm_request("GET", "/api/nginx/proxy-hosts", token=token)
+    except Exception as e:
+        print(f"⚠️  NPM 도메인 삭제 건너뜀: {e}")
+        print("    필요 시 NPM_PASS를 설정한 뒤 수동으로 삭제하세요.")
+        return
+
+    deleted = 0
+    for host in hosts:
+        domains = host.get("domain_names") or []
+        if any(d in domains for d in targets):
+            npm_request("DELETE", f"/api/nginx/proxy-hosts/{host['id']}", token=token)
+            deleted += 1
+            print(f"  NPM 도메인 삭제: {', '.join(domains)}")
+
+    if deleted == 0:
+        print(f"  NPM 도메인 삭제 대상 없음: {', '.join(targets)}")
+
+
+def ensure_unique_id(data: list[dict], slot: int, student_no: str) -> None:
+    for s in data:
+        if s["slot"] != slot and s.get("id") == student_no:
+            die(f"이미 다른 슬롯에서 사용 중인 학번입니다: {student_no} (slot {s['slot']})")
+
+
+def ensure_unique_ports(data: list[dict], slot: int, student_no: str) -> None:
+    target_service = container(slot) if slot >= 1 else None
+    used_ports = compose_host_ports()
+    for port in (int(p) for p in expected_ports(student_no)):
+        owner = used_ports.get(port)
+        if owner and owner != target_service:
+            die(f"포트 충돌이 발생합니다: {port} 는 이미 {owner} 에서 사용 중입니다")
+
+
+def apply_student(slot: int, name: str, new_login_id: str, new_pass: str) -> None:
+    data = load()
+    if slot < 1:
+        die("slot은 1 이상이어야 합니다")
+    if slot == ADMIN_SLOT:
+        die("관리자 슬롯(29)은 assign 대상이 아닙니다")
+
+    new_login_id, new_no = validate_login_id(new_login_id)
+    ensure_unique_id(data, slot, new_no)
+    ensure_unique_ports(data, slot, new_no)
+
+    student = next((s for s in data if s["slot"] == slot), None)
+    if student is None:
+        die(f"slot {slot} 정보가 없습니다")
+
+    old_no = student.get("id") or None
+    old_login = login_id_of(student) if old_no else None
+
+    # JSON 갱신
+    student["name"] = name
+    student["id"] = new_no
+    student["login_id"] = new_login_id
+    student["password"] = new_pass
+    save(data)
+    print(f"  students.json 갱신: slot {slot} -> {new_login_id}")
+
+    # 학생 디렉토리 정리
+    ensure_student_dir(old_no, new_no)
+
+    # compose 갱신 + 컨테이너 재생성 (포트/환경/볼륨 반영)
+    update_compose_service(slot, new_login_id, new_no, new_pass)
+    recreate_student_container(slot)
+    print(f"  컨테이너 재생성 완료: {container(slot)}")
+
+    # sshpiper 파이프 갱신
+    if old_login and old_login != new_login_id:
+        delete_pipe(old_login)
+    write_pipe(slot, new_login_id)
+    print(f"  SSH 매핑 갱신: {new_login_id} -> {container(slot)}:22")
+
+    # 리눅스 계정 정리(컨테이너 내부)
+    if container_running(slot):
+        if old_login and old_login != new_login_id:
+            run(f"docker exec {container(slot)} userdel -r {old_login}", check=False)
+        run(
+            f"docker exec {container(slot)} bash -lc "
+            f"'id {new_login_id} >/dev/null 2>&1 || useradd -m -d /home/{new_login_id} -s /bin/bash {new_login_id}'"
+        )
+        run(f"docker exec {container(slot)} chpasswd", input_text=f"{new_login_id}:{new_pass}\n")
+
+    # DB 계정/비밀번호 동기화
+    sync_db_account(slot, new_login_id, new_pass, old_login)
+
+    # NPM 프록시/도메인/SSL 갱신
+    npm_sync_domain(slot, old_no, old_login, new_login_id)
+
+    p_ssh, p_web, p_db, _ = expected_ports(new_no)
+    print(f"✅ 완료: {new_login_id} | SSH:{p_ssh} Web:{p_web} DB:{p_db} | https://{new_login_id}.{DOMAIN_SUFFIX}")
+
+
+def cmd_list(_args: list[str]) -> None:
+    data = load()
+    fmt = "{:>4}  {:<20}  {:<10}  {:<9}  {:<12}  {}"
+    print(fmt.format("슬롯", "이름", "로그인ID", "학번", "비밀번호", "상태"))
+    print("-" * 86)
+    for s in sorted(data, key=lambda x: x["slot"]):
+        sid = s.get("id") or "-"
+        login = login_id_of(s) if sid != "-" else "-"
+        pw = s.get("password") or "-"
+        status = "관리자" if s["slot"] == ADMIN_SLOT else ("실행 중" if container_running(s["slot"]) else "중지됨")
+        print(fmt.format(s["slot"], (s.get("name") or "(없음)")[:20], login, sid, pw[:12], status))
+
+
+def cmd_passwd(args: list[str]) -> None:
+    if len(args) < 2:
+        die("사용법: omni passwd <slot|학번|s학번> <newpass>")
+    data = load()
+    s = find_student(data, args[0])
+    if s is None:
+        die(f"학생을 찾을 수 없습니다: {args[0]}")
+
+    newpass = args[1]
+    s["password"] = newpass
+    save(data)
+
+    uid = login_id_of(s)
+    slot = s["slot"]
+    if container_running(slot):
+        run(f"docker exec {container(slot)} chpasswd", input_text=f"{uid}:{newpass}\n")
+        sync_db_account(slot, uid, newpass)
+        print(f"✅ 비밀번호 변경 완료: {uid}")
+    else:
+        print(f"⚠️  컨테이너 중지 상태 - JSON만 갱신됨: {uid}")
+
+    if slot != ADMIN_SLOT:
+        update_compose_service(slot, uid, s["id"], newpass)
+
+
+def cmd_create(args: list[str]) -> None:
+    if len(args) < 3:
+        die("사용법: omni create <name> <s학번> <password>")
+
+    name, new_login_id, new_pass = args[0], args[1], args[2]
+    new_login_id, new_no = validate_login_id(new_login_id)
+
+    data = load()
+    ensure_unique_id(data, -1, new_no)
+    ensure_unique_ports(data, -1, new_no)
+
+    slot = next_slot(data)
+    new_entry = {
+        "slot": slot,
+        "name": name,
+        "id": new_no,
+        "login_id": new_login_id,
+        "password": new_pass,
+    }
+    data.append(new_entry)
+    data.sort(key=lambda x: x["slot"])
+    save(data)
+    print(f"  students.json 신규 슬롯 추가: slot {slot} -> {new_login_id}")
+
+    ensure_student_dir(None, new_no)
+    append_compose_service(slot, new_login_id, new_no, new_pass)
+    recreate_student_container(slot)
+    print(f"  새 컨테이너 생성 완료: {container(slot)}")
+
+    # DB 계정/비밀번호 동기화
+    sync_db_account(slot, new_login_id, new_pass)
+
+    write_pipe(slot, new_login_id)
+    print(f"  SSH 매핑 생성: {new_login_id} -> {container(slot)}:22")
+
+    npm_sync_domain(slot, None, None, new_login_id)
+
+    p_ssh, p_web, p_db, _ = expected_ports(new_no)
+    print(f"✅ 생성 완료: slot {slot} | {new_login_id} | SSH:{p_ssh} Web:{p_web} DB:{p_db} | https://{new_login_id}.{DOMAIN_SUFFIX}")
+
+
+def cmd_destroy(args: list[str]) -> None:
+    if len(args) < 1:
+        die("사용법: omni destroy <slot|학번|s학번>")
+
+    data = load()
+    s = find_student(data, args[0])
+    if s is None:
+        die(f"학생을 찾을 수 없습니다: {args[0]}")
+    if s["slot"] == ADMIN_SLOT:
+        die("관리자 슬롯은 destroy 할 수 없습니다")
+
+    slot = s["slot"]
+    sid = s.get("id")
+    login = login_id_of(s)
+    svc = container(slot)
+
+    # 1) running container 제거
+    run(f"docker rm -f {svc}", check=False)
+    print(f"  컨테이너 제거: {svc}")
+
+    # 2) compose 서비스 제거
+    remove_compose_service(slot)
+    print(f"  compose 서비스 제거: {svc}")
+
+    # 3) SSH pipe / 학생 디렉토리 제거
+    if login:
+        delete_pipe(login)
+        print(f"  SSH 파이프 제거: {login}")
+    if sid:
+        student_dir = STUDENTS_DIR / sid
+        if student_dir.exists():
+            run(f"rm -rf {student_dir}", check=False)
+            print(f"  학생 폴더 제거: {student_dir}")
+
+    # 4) NPM 도메인 제거
+    npm_delete_domains(sid, login)
+
+    # 5) students.json에서 항목 제거
+    data = [row for row in data if row.get("slot") != slot]
+    save(data)
+    print(f"✅ 완전 삭제 완료: slot {slot} ({login})")
+
+
+def cmd_assign(args: list[str]) -> None:
+    if len(args) < 4:
+        die("사용법: omni assign <slot> <name> <s학번> <password>")
+    if not args[0].isdigit():
+        die("slot은 숫자여야 합니다")
+    apply_student(int(args[0]), args[1], args[2], args[3])
+
+
+def cmd_id(args: list[str]) -> None:
+    if len(args) < 2:
+        die("사용법: omni id <slot|학번|s학번> <s학번>")
+    data = load()
+    s = find_student(data, args[0])
+    if s is None:
+        die(f"학생을 찾을 수 없습니다: {args[0]}")
+    if s["slot"] == ADMIN_SLOT:
+        die("관리자 슬롯 ID는 omni로 고정입니다")
+    apply_student(s["slot"], s.get("name") or "(이름없음)", args[1], s.get("password") or "change-me")
+
+
+def cmd_del(args: list[str]) -> None:
+    if len(args) < 1:
+        die("사용법: omni del <slot|학번|s학번>")
+    data = load()
+    s = find_student(data, args[0])
+    if s is None:
+        die(f"학생을 찾을 수 없습니다: {args[0]}")
+    if s["slot"] == ADMIN_SLOT:
+        die("관리자 계정은 삭제할 수 없습니다")
+
+    login = login_id_of(s)
+    slot = s["slot"]
+    old_no = s.get("id")
+
+    if container_running(slot):
+        sync_db_account(slot, login, "", old_login_id=login, create_new=False)
+        run(f"docker exec {container(slot)} userdel -r {login}", check=False)
+    delete_pipe(login)
+
+    s["name"] = ""
+    s["id"] = ""
+    s["login_id"] = ""
+    s["password"] = ""
+    save(data)
+    print(f"✅ 슬롯 초기화: slot {slot}, 이전 로그인 {login}")
+
+    if old_no:
+        print(f"ℹ️  NPM 도메인({old_no}.{DOMAIN_SUFFIX})은 자동 삭제하지 않았습니다.")
+
+
+def cmd_ps(_args: list[str]) -> None:
+    result = run("docker ps --filter 'name=student' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'", check=False)
+    print(result.stdout, end="")
+
+
+COMMANDS = {
+    "list": cmd_list,
+    "create": cmd_create,
+    "destroy": cmd_destroy,
+    "passwd": cmd_passwd,
+    "assign": cmd_assign,
+    "id": cmd_id,
+    "del": cmd_del,
+    "ps": cmd_ps,
+}
+
+
+if __name__ == "__main__":
+    try:
+        if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help"}:
+            print(__doc__)
+            sys.exit(0)
+
+        cmd = sys.argv[1]
+        fn = COMMANDS.get(cmd)
+        if fn is None:
+            die(f"알 수 없는 명령어: {cmd}\n\n사용 가능: {', '.join(COMMANDS)}")
+        fn(sys.argv[2:])
+    except Exception as e:
+        die(str(e))

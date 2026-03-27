@@ -13,7 +13,9 @@ services:
       - USER_PASS=nomto
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501125:/var/www/html
+      - ./students/2501125:/home/s2501125
+      - ./shared:/home/s2501125/shared:ro
+      - ./student_logs/2501125:/var/log/student-apps/s2501125
     deploy:
       resources:
         limits:
@@ -34,7 +36,9 @@ services:
       - USER_PASS=maurocontrerasrivera
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501111:/var/www/html
+      - ./students/2501111:/home/s2501111
+      - ./shared:/home/s2501111/shared:ro
+      - ./student_logs/2501111:/var/log/student-apps/s2501111
     deploy:
       resources:
         limits:
@@ -55,7 +59,9 @@ services:
       - USER_PASS=2201901aia
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2201901:/var/www/html
+      - ./students/2201901:/home/s2201901
+      - ./shared:/home/s2201901/shared:ro
+      - ./student_logs/2201901:/var/log/student-apps/s2201901
     deploy:
       resources:
         limits:
@@ -76,7 +82,9 @@ services:
       - USER_PASS=ilsusuzanuyanik26
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501115:/var/www/html
+      - ./students/2501115:/home/s2501115
+      - ./shared:/home/s2501115/shared:ro
+      - ./student_logs/2501115:/var/log/student-apps/s2501115
     deploy:
       resources:
         limits:
@@ -97,7 +105,9 @@ services:
       - USER_PASS=moonsung121200
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301301:/var/www/html
+      - ./students/2301301:/home/s2301301
+      - ./shared:/home/s2301301/shared:ro
+      - ./student_logs/2301301:/var/log/student-apps/s2301301
     deploy:
       resources:
         limits:
@@ -118,7 +128,9 @@ services:
       - USER_PASS=sjwwa951
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501003:/var/www/html
+      - ./students/2501003:/home/s2501003
+      - ./shared:/home/s2501003/shared:ro
+      - ./student_logs/2501003:/var/log/student-apps/s2501003
     deploy:
       resources:
         limits:
@@ -139,7 +151,9 @@ services:
       - USER_PASS=kkm9514269
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301104:/var/www/html
+      - ./students/2301104:/home/s2301104
+      - ./shared:/home/s2301104/shared:ro
+      - ./student_logs/2301104:/var/log/student-apps/s2301104
     deploy:
       resources:
         limits:
@@ -160,7 +174,9 @@ services:
       - USER_PASS=baby3565
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2201403:/var/www/html
+      - ./students/2201403:/home/s2201403
+      - ./shared:/home/s2201403/shared:ro
+      - ./student_logs/2201403:/var/log/student-apps/s2201403
     deploy:
       resources:
         limits:
@@ -181,7 +197,9 @@ services:
       - USER_PASS=rlawlsgud2438
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301112:/var/www/html
+      - ./students/2301112:/home/s2301112
+      - ./shared:/home/s2301112/shared:ro
+      - ./student_logs/2301112:/var/log/student-apps/s2301112
     deploy:
       resources:
         limits:
@@ -202,7 +220,9 @@ services:
       - USER_PASS=chanmin9689
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301113:/var/www/html
+      - ./students/2301113:/home/s2301113
+      - ./shared:/home/s2301113/shared:ro
+      - ./student_logs/2301113:/var/log/student-apps/s2301113
     deploy:
       resources:
         limits:
@@ -223,7 +243,9 @@ services:
       - USER_PASS=choyeon-mun
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501080:/var/www/html
+      - ./students/2501080:/home/s2501080
+      - ./shared:/home/s2501080/shared:ro
+      - ./student_logs/2501080:/var/log/student-apps/s2501080
     deploy:
       resources:
         limits:
@@ -244,7 +266,9 @@ services:
       - USER_PASS=goldbong74
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301206:/var/www/html
+      - ./students/2301206:/home/s2301206
+      - ./shared:/home/s2301206/shared:ro
+      - ./student_logs/2301206:/var/log/student-apps/s2301206
     deploy:
       resources:
         limits:
@@ -265,7 +289,9 @@ services:
       - USER_PASS=pjspjs04
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301306:/var/www/html
+      - ./students/2301306:/home/s2301306
+      - ./shared:/home/s2301306/shared:ro
+      - ./student_logs/2301306:/var/log/student-apps/s2301306
     deploy:
       resources:
         limits:
@@ -286,7 +312,9 @@ services:
       - USER_PASS=star88222
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501089:/var/www/html
+      - ./students/2501089:/home/s2501089
+      - ./shared:/home/s2501089/shared:ro
+      - ./student_logs/2501089:/var/log/student-apps/s2501089
     deploy:
       resources:
         limits:
@@ -307,7 +335,9 @@ services:
       - USER_PASS=hwanarchive
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501090:/var/www/html
+      - ./students/2501090:/home/s2501090
+      - ./shared:/home/s2501090/shared:ro
+      - ./student_logs/2501090:/var/log/student-apps/s2501090
     deploy:
       resources:
         limits:
@@ -328,7 +358,9 @@ services:
       - USER_PASS=0425seok
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301209:/var/www/html
+      - ./students/2301209:/home/s2301209
+      - ./shared:/home/s2301209/shared:ro
+      - ./student_logs/2301209:/var/log/student-apps/s2301209
     deploy:
       resources:
         limits:
@@ -349,7 +381,9 @@ services:
       - USER_PASS=younhnoo0325
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301123:/var/www/html
+      - ./students/2301123:/home/s2301123
+      - ./shared:/home/s2301123/shared:ro
+      - ./student_logs/2301123:/var/log/student-apps/s2301123
     deploy:
       resources:
         limits:
@@ -370,7 +404,9 @@ services:
       - USER_PASS=sjdisjsjs90
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501045:/var/www/html
+      - ./students/2501045:/home/s2501045
+      - ./shared:/home/s2501045/shared:ro
+      - ./student_logs/2501045:/var/log/student-apps/s2501045
     deploy:
       resources:
         limits:
@@ -391,7 +427,9 @@ services:
       - USER_PASS=l90670847
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301129:/var/www/html
+      - ./students/2301129:/home/s2301129
+      - ./shared:/home/s2301129/shared:ro
+      - ./student_logs/2301129:/var/log/student-apps/s2301129
     deploy:
       resources:
         limits:
@@ -412,7 +450,9 @@ services:
       - USER_PASS=a46750309
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501058:/var/www/html
+      - ./students/2501058:/home/s2501058
+      - ./shared:/home/s2501058/shared:ro
+      - ./student_logs/2501058:/var/log/student-apps/s2501058
     deploy:
       resources:
         limits:
@@ -433,7 +473,9 @@ services:
       - USER_PASS=kyalkwlww1
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501059:/var/www/html
+      - ./students/2501059:/home/s2501059
+      - ./shared:/home/s2501059/shared:ro
+      - ./student_logs/2501059:/var/log/student-apps/s2501059
     deploy:
       resources:
         limits:
@@ -454,7 +496,9 @@ services:
       - USER_PASS=goxodpdltm
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2401061:/var/www/html
+      - ./students/2401061:/home/s2401061
+      - ./shared:/home/s2401061/shared:ro
+      - ./student_logs/2401061:/var/log/student-apps/s2401061
     deploy:
       resources:
         limits:
@@ -475,7 +519,9 @@ services:
       - USER_PASS=dlgmltjd3353
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2201130:/var/www/html
+      - ./students/2201130:/home/s2201130
+      - ./shared:/home/s2201130/shared:ro
+      - ./student_logs/2201130:/var/log/student-apps/s2201130
     deploy:
       resources:
         limits:
@@ -496,7 +542,9 @@ services:
       - USER_PASS=hanbyul0623
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501092:/var/www/html
+      - ./students/2501092:/home/s2501092
+      - ./shared:/home/s2501092/shared:ro
+      - ./student_logs/2501092:/var/log/student-apps/s2501092
     deploy:
       resources:
         limits:
@@ -517,7 +565,9 @@ services:
       - USER_PASS=koojin0708
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2301136:/var/www/html
+      - ./students/2301136:/home/s2301136
+      - ./shared:/home/s2301136/shared:ro
+      - ./student_logs/2301136:/var/log/student-apps/s2301136
     deploy:
       resources:
         limits:
@@ -538,7 +588,9 @@ services:
       - USER_PASS=snsynu
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501085:/var/www/html
+      - ./students/2501085:/home/s2501085
+      - ./shared:/home/s2501085/shared:ro
+      - ./student_logs/2501085:/var/log/student-apps/s2501085
     deploy:
       resources:
         limits:
@@ -559,7 +611,9 @@ services:
       - USER_PASS=minb55
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501073:/var/www/html
+      - ./students/2501073:/home/s2501073
+      - ./shared:/home/s2501073/shared:ro
+      - ./student_logs/2501073:/var/log/student-apps/s2501073
     deploy:
       resources:
         limits:
@@ -580,7 +634,9 @@ services:
       - USER_PASS=yeonjun0103
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/2501076:/var/www/html
+      - ./students/2501076:/home/s2501076
+      - ./shared:/home/s2501076/shared:ro
+      - ./student_logs/2501076:/var/log/student-apps/s2501076
     deploy:
       resources:
         limits:
@@ -598,10 +654,17 @@ services:
       - "50000:7681"
     environment:
       - STUDENT_ID=s0000000
-      - USER_PASS=test1234
+      - USER_PASS=rai1235
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/0000000:/var/www/html
+      - ./students/0000000:/home/s0000000
+      - ./shared:/home/s0000000/shared:ro
+      - ./student_logs/0000000:/var/log/student-apps/s0000000
+      - ./students/0000000/omni:/usr/local/bin/omni
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/omni_root
+      - ./dashboard:/dashboard_data
+      - ./sshpiper/pipes:/sshpiper_pipes
     deploy:
       resources:
         limits:
@@ -613,11 +676,23 @@ services:
     image: flask-mysql-ssh
     container_name: dashboard
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./dashboard:/app
       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app
     command: python -u app.py
     user: root
+    restart: always
+
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    volumes:
+      - ./npm/data:/data
+      - ./npm/letsencrypt:/etc/letsencrypt
     restart: always
