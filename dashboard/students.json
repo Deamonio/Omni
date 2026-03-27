@@ -1,0 +1,178 @@
+[
+  {
+    "slot": 1,
+    "name": "Baltukov Nomto",
+    "id": "2501125",
+    "password": "nomto",
+    "login_id": "s2501125"
+  },
+  {
+    "slot": 2,
+    "name": "CONTRERAS RIVERA MAURO JEISON",
+    "id": "2501111",
+    "password": "maurocontrerasrivera"
+  },
+  {
+    "slot": 3,
+    "name": "Dorzhieva Aiana",
+    "id": "2201901",
+    "password": "2201901aia"
+  },
+  {
+    "slot": 4,
+    "name": "UYANIK ILSU SUZAN",
+    "id": "2501115",
+    "password": "ilsusuzanuyanik26"
+  },
+  {
+    "slot": 5,
+    "name": "강문성",
+    "id": "2301301",
+    "password": "moonsung121200"
+  },
+  {
+    "slot": 6,
+    "name": "강성우",
+    "id": "2501003",
+    "password": "sjwwa951"
+  },
+  {
+    "slot": 7,
+    "name": "김광호",
+    "id": "2301104",
+    "password": "kkm9514269"
+  },
+  {
+    "slot": 8,
+    "name": "김준석",
+    "id": "2201403",
+    "password": "baby3565"
+  },
+  {
+    "slot": 9,
+    "name": "김진형",
+    "id": "2301112",
+    "password": "rlawlsgud2438"
+  },
+  {
+    "slot": 10,
+    "name": "김찬민",
+    "id": "2301113",
+    "password": "chanmin9689"
+  },
+  {
+    "slot": 11,
+    "name": "문초연",
+    "id": "2501080",
+    "password": "choyeon-mun"
+  },
+  {
+    "slot": 12,
+    "name": "박성준",
+    "id": "2301206",
+    "password": "goldbong74"
+  },
+  {
+    "slot": 13,
+    "name": "박준성",
+    "id": "2301306",
+    "password": "pjspjs04"
+  },
+  {
+    "slot": 14,
+    "name": "박지혜",
+    "id": "2501089",
+    "password": "star88222"
+  },
+  {
+    "slot": 15,
+    "name": "배정환",
+    "id": "2501090",
+    "password": "hwanarchive"
+  },
+  {
+    "slot": 16,
+    "name": "석민재",
+    "id": "2301209",
+    "password": "0425seok"
+  },
+  {
+    "slot": 17,
+    "name": "신윤호",
+    "id": "2301123",
+    "password": "younhnoo0325"
+  },
+  {
+    "slot": 18,
+    "name": "엄태영",
+    "id": "2501045",
+    "password": "sjdisjsjs90"
+  },
+  {
+    "slot": 19,
+    "name": "이순주",
+    "id": "2301129",
+    "password": "l90670847"
+  },
+  {
+    "slot": 20,
+    "name": "이어진",
+    "id": "2501058",
+    "password": "a46750309"
+  },
+  {
+    "slot": 21,
+    "name": "이웅재",
+    "id": "2501059",
+    "password": "kyalkwlww1"
+  },
+  {
+    "slot": 22,
+    "name": "이현재",
+    "id": "2401061",
+    "password": "goxodpdltm"
+  },
+  {
+    "slot": 23,
+    "name": "이희성",
+    "id": "2201130",
+    "password": "dlgmltjd3353"
+  },
+  {
+    "slot": 24,
+    "name": "장한별",
+    "id": "2501092",
+    "password": "hanbyul0623"
+  },
+  {
+    "slot": 25,
+    "name": "정구진",
+    "id": "2301136",
+    "password": "koojin0708"
+  },
+  {
+    "slot": 26,
+    "name": "정서윤",
+    "id": "2501085",
+    "password": "snsynu"
+  },
+  {
+    "slot": 27,
+    "name": "최민혁",
+    "id": "2501073",
+    "password": "minb55"
+  },
+  {
+    "slot": 28,
+    "name": "황연준",
+    "id": "2501076",
+    "password": "yeonjun0103"
+  },
+  {
+    "slot": 29,
+    "name": "System Admin",
+    "id": "0000000",
+    "password": "rai1235",
+    "linux_user": "omni"
+  }
+]

@@ -26,4 +26,4 @@
 순번26 | ID: s2501085 | SSH: 21085 | Web: 31085 | DB: 41085 | PW: snsynu
 순번27 | ID: s2501073 | SSH: 21073 | Web: 31073 | DB: 41073 | PW: minb55
 순번28 | ID: s2501076 | SSH: 21076 | Web: 31076 | DB: 41076 | PW: yeonjun0103
-순번29 | ID: s0000000 | SSH: 20000 | Web: 30000 | DB: 40000 | PW: test1234
+순번29 | ID: omni | SSH: 20000 | Web: 30000 | DB: 40000 | PW: rai1235

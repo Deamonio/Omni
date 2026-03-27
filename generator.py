@@ -15,18 +15,56 @@ STUDENT_DATA = [
     ("이희성", "2201130", "dlgmltjd3353"), ("장한별", "2501092", "hanbyul0623"),
     ("정구진", "2301136", "koojin0708"), ("정서윤", "2501085", "snsynu"),
     ("최민혁", "2501073", "minb55"), ("황연준", "2501076", "yeonjun0103"),
-    ("System Admin", "0000000", "test1234")
+    ("System Admin", "0000000", "rai1235")
 ]
 
 BASE_PATH = "students"
+LOG_BASE_PATH = "student_logs"
 IMAGE_NAME = "flask-mysql-ssh"
-if not os.path.exists(BASE_PATH): os.makedirs(BASE_PATH)
+
+# 1. 메인 students 폴더 생성
+if not os.path.exists(BASE_PATH): 
+    os.makedirs(BASE_PATH)
+
+# 학생별 앱 로그 저장 폴더(학생 홈 외부) 생성
+if not os.path.exists(LOG_BASE_PATH):
+  os.makedirs(LOG_BASE_PATH)
 
 docker_compose_content = "services:\n"
 
 for i, (name, s_id, s_pw) in enumerate(STUDENT_DATA, 1):
+    # [추가] 2. 각 학생별 실제 물리 폴더 생성
+    student_dir = os.path.join(BASE_PATH, s_id)
+    if not os.path.exists(student_dir):
+        os.makedirs(student_dir)
+
+    # 학생별 기본 index.html 생성 (이미 있으면 유지)
+    index_path = os.path.join(student_dir, "index.html")
+    if not os.path.exists(index_path):
+        template_html = f"""<!DOCTYPE html>
+<html lang=\"ko\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />
+  <title>{name} ({s_id})</title>
+</head>
+<body>
+  <h1>{name}</h1>
+  <p>학번: {s_id}</p>
+  <p>이 파일은 기본 템플릿입니다. 학생별로 내용을 수정하세요.</p>
+</body>
+</html>
+"""
+        with open(index_path, "w", encoding="utf-8") as f:
+            f.write(template_html)
+
     linux_id = f"s{s_id}"
     last_4 = s_id[-4:]
+
+    student_log_dir = os.path.join(LOG_BASE_PATH, s_id)
+    if not os.path.exists(student_log_dir):
+      os.makedirs(student_log_dir)
+    
     docker_compose_content += f"""
   student{i:02d}:
     image: {IMAGE_NAME}
@@ -41,7 +79,9 @@ for i, (name, s_id, s_pw) in enumerate(STUDENT_DATA, 1):
       - USER_PASS={s_pw}
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./{BASE_PATH}/{s_id}:/var/www/html
+      - ./{BASE_PATH}/{s_id}:/home/{linux_id}
+      - ./shared:/home/{linux_id}/shared:ro
+      - ./{LOG_BASE_PATH}/{s_id}:/var/log/student-apps/{linux_id}
     deploy:
       resources:
         limits:
@@ -50,13 +90,13 @@ for i, (name, s_id, s_pw) in enumerate(STUDENT_DATA, 1):
     restart: always
 """
 
-# [중요] 대시보드 설정: 도커 소켓 마운트 추가
+# [중요] 대시보드 설정
 docker_compose_content += """
   dashboard:
     image: flask-mysql-ssh
     container_name: dashboard
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./dashboard:/app
       - /var/run/docker.sock:/var/run/docker.sock
@@ -64,7 +104,21 @@ docker_compose_content += """
     command: python -u app.py
     user: root
     restart: always
+
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    volumes:
+      - ./npm/data:/data
+      - ./npm/letsencrypt:/etc/letsencrypt
+    restart: always
 """
 
 with open("docker-compose.yml", "w", encoding="utf-8") as f:
     f.write(docker_compose_content)
+
+print(f"Successfully generated docker-compose.yml and {len(STUDENT_DATA)} student directories.")
