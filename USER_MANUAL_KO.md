@@ -319,6 +319,11 @@ omni --help
 | `omni passwd <slot\|학번\|s학번> <newpass>` | 학생 비밀번호 변경 | `omni passwd s2501125 newpass` |
 | `omni del <slot\|학번\|s학번>` | 슬롯 초기화(계정 정보 비우기) | `omni del 3` |
 | `omni destroy <slot\|학번\|s학번>` | 슬롯 완전 삭제(컨테이너/파이프/학생폴더/도메인 삭제) | `omni destroy s2501888` |
+| `omni exec <slot\|학번\|s학번> <command...>` | 특정 학생 계정 권한으로 명령 실행 | `omni exec 1 'pwd && whoami'` |
+| `omni execroot <slot\|학번\|s학번> <command...>` | 특정 컨테이너에서 root 권한으로 명령 실행 | `omni execroot 1 'ls -la /home'` |
+| `omni execall <command...>` | 전체 학생 컨테이너에 같은 명령 일괄 실행 | `omni execall 'whoami'` |
+| `omni appstatus` | 전체 학생의 `app.py` 실행 여부 조회 | `omni appstatus` |
+| `omni dbstatus` | 전체 학생/관리자 컨테이너의 MySQL 상태 조회 | `omni dbstatus` |
 
 `omni create`, `omni assign`, `omni id` 실행 시 자동 동기화 항목:
 - `dashboard/students.json`
@@ -335,6 +340,26 @@ omni --help
 - 학생 로그인 ID는 반드시 `s` + 7자리 학번 형식이어야 합니다. (예: `s2501125`)
 - `omni destroy`는 학생 홈 폴더까지 삭제하므로 실행 전 백업 여부를 반드시 확인하세요.
 - 관리자 슬롯(29, `omni`)은 `assign/del/destroy` 대상이 아닙니다.
+- `omni execall` 은 모든 학생 컨테이너에 동일 명령을 보내므로, 삭제/이동 명령(`rm`, `mv`)은 특히 주의해서 사용하세요.
+
+실무에서 자주 쓰는 예시:
+
+```bash
+# 모든 학생 계정에서 현재 사용자 확인
+omni execall 'whoami'
+
+# 특정 학생 홈 디렉토리 용량 확인
+omni exec 1 'du -sh ~'
+
+# 특정 학생 컨테이너에서 root로 로그 폴더 확인
+omni execroot 1 'ls -la /var/log/student-apps'
+
+# 전체 앱 실행 상태 점검
+omni appstatus
+
+# 전체 DB 접속 상태 점검
+omni dbstatus
+```
 
 ### 10.8 omni 명령 실패 사례와 해결 방법
 

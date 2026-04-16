@@ -1,0 +1,2 @@
+2026/04/06 18:24:15 [error] 638#638: *81166 connect() failed (111: Connection refused) while connecting to upstream, client: 74.7.175.158, server: 2201130.robotandi.deamon.io, request: "GET /robots.txt HTTP/2.0", upstream: "http://172.18.0.31:5000/robots.txt", host: "2201130.robotandi.deamon.io"
+2026/04/16 09:33:12 [error] 310#310: *18999 student23 could not be resolved (2: Server failure), client: 209.38.223.198, server: 2201130.robotandi.deamon.io, request: "GET /wp-login.php HTTP/1.1", host: "2201130.robotandi.deamon.io"

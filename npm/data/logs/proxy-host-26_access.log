@@ -1,0 +1,3 @@
+[06/Apr/2026:18:24:15 +0000] - 502 502 - GET https 2201130.robotandi.deamon.io "/robots.txt" [Client 74.7.175.158] [Length 556] [Gzip -] [Sent-to student23] "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36; compatible; OAI-SearchBot/1.3; robots.txt; +https://openai.com/searchbot" "-"
+[16/Apr/2026:09:33:11 +0000] - - 301 - GET http 2201130.robotandi.deamon.io "/wp-login.php" [Client 209.38.223.198] [Length 166] [Gzip -] [Sent-to student23] "Mozilla/5.0" "-"
+[16/Apr/2026:09:33:12 +0000] - - 502 - GET https 2201130.robotandi.deamon.io "/wp-login.php" [Client 209.38.223.198] [Length 154] [Gzip -] [Sent-to student23] "Mozilla/5.0" "-"

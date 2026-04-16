@@ -10,25 +10,136 @@ Usage:
     omni id <slot|학번|s학번> <s학번>
     omni del <slot|학번|s학번>
     omni ps
+    omni exec <slot|학번|s학번> <command...>
+    omni execroot <slot|학번|s학번> <command...>
+    omni execall <command...>
+    omni appstatus
+    omni dbstatus
+    omni sshwho [--all]
+    omni restartappall
+    omni push <file>
+    omni pushdir <dir>
+    omni collect <path>
+    omni health
+    omni backup
+    omni restore
 
 Notes:
     - 학생 로그인 ID는 반드시 s학번 형식이어야 합니다. (예: s2501125)
     - create/assign/id 실행 시 아래 항목을 자동 동기화합니다.
         students.json, docker-compose 포트/환경변수/볼륨, sshpiper 파이프, NPM 프록시 도메인(SSL 포함)
 """
-
-from __future__ import annotations
-
-import getpass
-import json
-import os
-import re
-import sqlite3
-import subprocess
-import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
+import os
+import sys
+import json
+import re
+import shlex
+import subprocess
+from datetime import datetime
+
+def cmd_restartappall(_args: list[str]) -> None:
+    """모든 학생 컨테이너의 app.py를 재시작"""
+    print("[omni] 모든 학생 app.py 재시작...")
+    success = failed = skipped = 0
+    for student in active_students():
+        slot = student["slot"]
+        if not container_running(slot):
+            skipped += 1
+            print_result_header(student)
+            print("SKIP: 컨테이너 중지 상태")
+            continue
+        # app.py 종료 및 재시작
+        result = exec_in_student(student, "pkill -f app.py; sleep 1; nohup python3 ~/app.py > ~/app.log 2>&1 &")
+        print_result_header(student)
+        if result.returncode == 0:
+            print("app.py 재시작 완료")
+            success += 1
+        else:
+            print("app.py 재시작 실패")
+            failed += 1
+    print(f"요약: 성공 {success}, 실패 {failed}, 건너뜀 {skipped}")
+    if failed:
+        sys.exit(1)
+
+def cmd_push(args: list[str]) -> None:
+    """관리자 파일을 모든 학생 홈에 일괄 배포"""
+    if len(args) != 1:
+        die("사용법: omni push <file>")
+    src = os.path.abspath(args[0])
+    if not os.path.isfile(src):
+        die(f"파일이 존재하지 않음: {src}")
+    for student in active_students():
+        slot = student["slot"]
+        if not container_running(slot):
+            print(f"{login_id_of(student)}: SKIP (컨테이너 중지)")
+            continue
+        dst = f"/home/{login_id_of(student)}/{os.path.basename(src)}"
+        # docker cp로 파일 복사
+        run(f"docker cp {shlex.quote(src)} {container(slot)}:{shlex.quote(dst)}", check=False)
+        print(f"{login_id_of(student)}: {dst} 배포 완료")
+
+def cmd_pushdir(args: list[str]) -> None:
+    """관리자 디렉토리를 모든 학생 홈에 일괄 배포"""
+    if len(args) != 1:
+        die("사용법: omni pushdir <dir>")
+    src = os.path.abspath(args[0])
+    if not os.path.isdir(src):
+        die(f"디렉토리가 존재하지 않음: {src}")
+    for student in active_students():
+        slot = student["slot"]
+        if not container_running(slot):
+            print(f"{login_id_of(student)}: SKIP (컨테이너 중지)")
+            continue
+        dst = f"/home/{login_id_of(student)}/{os.path.basename(src)}"
+        # 디렉토리 tar로 복사
+        tar_cmd = f"tar -C {shlex.quote(os.path.dirname(src))} -cf - {shlex.quote(os.path.basename(src))}"
+        docker_cmd = f"docker exec -i {container(slot)} tar -C /home/{login_id_of(student)} -xf -"
+        with os.popen(f"{tar_cmd} | {docker_cmd}") as p:
+            p.read()
+        print(f"{login_id_of(student)}: {dst} 디렉토리 배포 완료")
+
+def cmd_collect(args: list[str]) -> None:
+    """모든 학생의 파일/경로를 한 디렉토리에 수거"""
+    if len(args) != 1:
+        die("사용법: omni collect <path>")
+    path = args[0]
+    outdir = os.path.abspath(f"collect_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+    os.makedirs(outdir, exist_ok=True)
+    for student in active_students():
+        slot = student["slot"]
+        if not container_running(slot):
+            print(f"{login_id_of(student)}: SKIP (컨테이너 중지)")
+            continue
+        src = f"/home/{login_id_of(student)}/{path}"
+        dst = os.path.join(outdir, f"{login_id_of(student)}_{os.path.basename(path)}")
+        # 파일/디렉토리 복사 (디렉토리는 zip)
+        r = run(f"docker exec {container(slot)} test -d {shlex.quote(src)}", check=False)
+        if r.returncode == 0:
+            # 디렉토리: zip으로 압축 후 복사
+            zipname = f"/tmp/{login_id_of(student)}_{os.path.basename(path)}.zip"
+            run(f"docker exec {container(slot)} zip -r {shlex.quote(zipname)} {shlex.quote(src)}", check=False)
+            run(f"docker cp {container(slot)}:{zipname} {shlex.quote(dst)}.zip", check=False)
+            run(f"docker exec {container(slot)} rm -f {shlex.quote(zipname)}", check=False)
+            print(f"{login_id_of(student)}: DIR -> {dst}.zip")
+        else:
+            # 파일: 직접 복사
+            run(f"docker cp {container(slot)}:{shlex.quote(src)} {shlex.quote(dst)}", check=False)
+            print(f"{login_id_of(student)}: FILE -> {dst}")
+
+def cmd_health(_args: list[str]) -> None:
+
+    print("[omni] 종합 진단 (준비중)")
+    # TODO: SSH, Flask, DB, shared, NPM 프록시 점검
+
+def cmd_backup(_args: list[str]) -> None:
+    print("[omni] 전체 백업 (준비중)")
+    # TODO: 학생 홈 전체 날짜별 백업
+
+def cmd_restore(_args: list[str]) -> None:
+    print("[omni] 복구 (준비중)")
+    # TODO: 특정 시점으로 복구
+
 
 STUDENTS_JSON = Path("/dashboard_data/students.json")
 PIPES_DIR = Path("/sshpiper_pipes")
@@ -107,9 +218,66 @@ def container(slot: int) -> str:
     return f"student{slot:02d}"
 
 
+def runtime_container(slot: int) -> str | None:
+    """Return the actual running container name for a slot.
+
+    Some environments run containers with compose-prefixed names like
+    `<project>_student01`, so we match both exact and suffixed forms.
+    """
+    base = container(slot)
+    exact = run(f"docker inspect -f '{{{{.State.Running}}}}' {base}", check=False)
+    if exact.returncode == 0 and exact.stdout.strip() == "true":
+        return base
+
+    r = run(
+        f"docker ps --format '{{{{.Names}}}}' | grep -E '(^|_){base}$' | head -n1",
+        check=False,
+    )
+    name = r.stdout.strip()
+    return name or None
+
+
 def container_running(slot: int) -> bool:
-    r = run(f"docker inspect -f '{{{{.State.Running}}}}' {container(slot)}", check=False)
-    return r.returncode == 0 and r.stdout.strip() == "true"
+    return runtime_container(slot) is not None
+
+
+def active_students(*, include_admin: bool = False) -> list[dict]:
+    rows = []
+    for student in sorted(load(), key=lambda x: x["slot"]):
+        if not student.get("id"):
+            continue
+        if not include_admin and student["slot"] == ADMIN_SLOT:
+            continue
+        rows.append(student)
+    return rows
+
+
+def resolve_student_or_die(key: str) -> dict:
+    student = find_student(load(), key)
+    if student is None:
+        die(f"학생을 찾을 수 없습니다: {key}")
+    return student
+
+
+def shell_join(args: list[str]) -> str:
+    if not args:
+        die("실행할 명령어가 필요합니다")
+    return " ".join(args)
+
+
+def exec_in_student(student: dict, command_text: str, *, as_root: bool = False) -> subprocess.CompletedProcess:
+    login_id = login_id_of(student)
+    slot = student["slot"]
+    quoted = shlex.quote(command_text)
+    base = f"docker exec {container(slot)} sh -lc {quoted}"
+    if as_root:
+        return run(base, check=False)
+    return run(f"docker exec --user {login_id} {container(slot)} sh -lc {quoted}", check=False)
+
+
+def print_result_header(student: dict) -> None:
+    print(f"[{student['slot']:02d}] {login_id_of(student)} ({student.get('name') or '이름없음'})")
+    print("-" * 72)
 
 
 def expected_ports(student_no: str) -> tuple[str, str, str, str]:
@@ -786,6 +954,209 @@ def cmd_ps(_args: list[str]) -> None:
     print(result.stdout, end="")
 
 
+def cmd_exec(args: list[str]) -> None:
+    if len(args) < 2:
+        die("사용법: omni exec <slot|학번|s학번> <command...>")
+    student = resolve_student_or_die(args[0])
+    if student["slot"] == ADMIN_SLOT:
+        die("관리자 슬롯에는 omni exec 대신 일반 셸 명령을 사용하세요")
+    if not container_running(student["slot"]):
+        die(f"컨테이너가 실행 중이 아닙니다: {container(student['slot'])}")
+
+    result = exec_in_student(student, shell_join(args[1:]))
+    print_result_header(student)
+    if result.stdout:
+        print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+    if result.stderr:
+        print(result.stderr, end="" if result.stderr.endswith("\n") else "\n", file=sys.stderr)
+    print(f"exit code: {result.returncode}")
+    if result.returncode != 0:
+        sys.exit(result.returncode)
+
+
+def cmd_execroot(args: list[str]) -> None:
+    if len(args) < 2:
+        die("사용법: omni execroot <slot|학번|s학번> <command...>")
+    student = resolve_student_or_die(args[0])
+    if student["slot"] == ADMIN_SLOT:
+        die("관리자 슬롯에는 omni execroot 대신 일반 셸 명령을 사용하세요")
+    if not container_running(student["slot"]):
+        die(f"컨테이너가 실행 중이 아닙니다: {container(student['slot'])}")
+
+    result = exec_in_student(student, shell_join(args[1:]), as_root=True)
+    print_result_header(student)
+    if result.stdout:
+        print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+    if result.stderr:
+        print(result.stderr, end="" if result.stderr.endswith("\n") else "\n", file=sys.stderr)
+    print(f"exit code: {result.returncode}")
+    if result.returncode != 0:
+        sys.exit(result.returncode)
+
+
+def cmd_execall(args: list[str]) -> None:
+    if not args:
+        die("사용법: omni execall <command...>")
+    command_text = shell_join(args)
+    success = failed = skipped = 0
+    for student in active_students():
+        slot = student["slot"]
+        if not container_running(slot):
+            skipped += 1
+            print_result_header(student)
+            print("SKIP: 컨테이너 중지 상태")
+            continue
+
+        result = exec_in_student(student, command_text)
+        print_result_header(student)
+        if result.stdout:
+            print(result.stdout, end="" if result.stdout.endswith("\n") else "\n")
+        if result.stderr:
+            print(result.stderr, end="" if result.stderr.endswith("\n") else "\n", file=sys.stderr)
+        print(f"exit code: {result.returncode}")
+        if result.returncode == 0:
+            success += 1
+        else:
+            failed += 1
+
+    print("=" * 72)
+    print(f"요약: 성공 {success}, 실패 {failed}, 건너뜀 {skipped}")
+    if failed:
+        sys.exit(1)
+
+
+def cmd_appstatus(_args: list[str]) -> None:
+    fmt = "{:>4}  {:<10}  {:<20}  {}"
+    print(fmt.format("슬롯", "로그인ID", "상태", "설명"))
+    print("-" * 72)
+    for student in active_students():
+        slot = student["slot"]
+        login_id = login_id_of(student)
+        if not container_running(slot):
+            print(fmt.format(slot, login_id, "중지", "컨테이너 중지"))
+            continue
+
+        result = run(
+            f"docker exec {container(slot)} sh -lc \"ps -u {login_id} -o pid=,args= | grep -F 'app.py' | grep -v grep\"",
+            check=False,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            print(fmt.format(slot, login_id, "실행 중", result.stdout.strip().splitlines()[0][:32]))
+        else:
+            print(fmt.format(slot, login_id, "오프라인", "app.py 프로세스 없음"))
+
+
+def cmd_dbstatus(_args: list[str]) -> None:
+    fmt = "{:>4}  {:<10}  {:<12}  {}"
+    print(fmt.format("슬롯", "로그인ID", "DB 상태", "설명"))
+    print("-" * 72)
+    for student in active_students(include_admin=True):
+        slot = student["slot"]
+        login_id = login_id_of(student)
+        if slot == ADMIN_SLOT:
+            login_id = "omni"
+        rt_container = runtime_container(slot)
+        if not rt_container:
+            print(fmt.format(slot, login_id, "중지", "컨테이너 중지"))
+            continue
+
+        proc = run(f"docker exec {rt_container} sh -lc \"pgrep -a mariadbd\"", check=False)
+        auth = run(
+            f"docker exec {rt_container} sh -lc \"MYSQL_PWD={shlex.quote(student.get('password') or '')} mysql -h 127.0.0.1 -u {login_id} -e 'select 1;'\"",
+            check=False,
+        )
+        if proc.returncode == 0 and auth.returncode == 0:
+            print(fmt.format(slot, login_id, "정상", "프로세스/로그인 확인"))
+        elif proc.returncode == 0:
+            print(fmt.format(slot, login_id, "경고", "DB 프로세스는 있으나 로그인 실패"))
+        else:
+            print(fmt.format(slot, login_id, "오류", "mariadbd 프로세스 없음"))
+
+
+def cmd_sshwho(args: list[str]) -> None:
+    """현재 SSH 접속 세션 조회.
+
+    기본값은 접속 중인 세션만 표시하고,
+    --all 옵션을 주면 모든 슬롯 상태를 함께 표시한다.
+    """
+    show_all = "--all" in args
+    fmt = "{:>4}  {:<10}  {:<16}  {:<10}  {}"
+    print(fmt.format("슬롯", "로그인ID", "원격IP", "TTY", "접속시각"))
+    print("-" * 72)
+
+    rows = 0
+    for student in active_students(include_admin=True):
+        slot = student["slot"]
+        login_id = "omni" if slot == ADMIN_SLOT else login_id_of(student)
+        rt_container = runtime_container(slot)
+
+        if not rt_container:
+            if show_all:
+                print(f"{slot:>4}  {login_id:<10}  {'-':<16}  {'-':<10}  컨테이너 중지")
+                rows += 1
+            continue
+
+        who = run(f"docker exec {rt_container} sh -lc \"who\"", check=False)
+        if who.returncode != 0:
+            if show_all:
+                print(f"{slot:>4}  {login_id:<10}  {'-':<16}  {'-':<10}  who 조회 실패")
+                rows += 1
+            continue
+
+        matched = []
+        for line in who.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            if not parts:
+                continue
+            user = parts[0]
+            if user != login_id:
+                continue
+
+            tty = parts[1] if len(parts) > 1 else "-"
+            login_at = " ".join(parts[2:4]) if len(parts) >= 4 else "-"
+            remote_ip = "-"
+            if len(parts) >= 5:
+                remote_ip = " ".join(parts[4:]).strip("()") or "-"
+            matched.append((remote_ip, tty, login_at))
+
+        if not matched:
+            # 일부 환경에서는 who/w가 비어도 sshd-session 프로세스는 존재한다.
+            # 이 경우 ps 기반으로 로그인 세션을 보완 탐지한다.
+            ps = run(
+                f"docker exec {rt_container} sh -lc \"ps -eo pid=,user=,tty=,lstart=,cmd= | grep 'sshd-session: ' | grep '@pts/' | grep -v grep\"",
+                check=False,
+            )
+            if ps.returncode == 0:
+                for line in ps.stdout.splitlines():
+                    parts = line.split()
+                    if len(parts) < 9:
+                        continue
+                    user = parts[1]
+                    tty = parts[2]
+                    if user != login_id:
+                        continue
+                    login_at = " ".join(parts[3:8])
+                    cmdline = " ".join(parts[8:])
+                    m = re.search(r"@([A-Za-z0-9._/:-]+)", cmdline)
+                    if m:
+                        tty = m.group(1)
+                    matched.append(("-", tty, login_at))
+
+        if matched:
+            for remote_ip, tty, login_at in matched:
+                print(f"{slot:>4}  {login_id:<10}  {remote_ip:<16}  {tty:<10}  {login_at}")
+                rows += 1
+        elif show_all:
+            print(f"{slot:>4}  {login_id:<10}  {'-':<16}  {'-':<10}  접속 없음")
+            rows += 1
+
+    if rows == 0:
+        print("현재 SSH 접속 중인 세션이 없습니다.")
+
+
 COMMANDS = {
     "list": cmd_list,
     "create": cmd_create,
@@ -795,6 +1166,19 @@ COMMANDS = {
     "id": cmd_id,
     "del": cmd_del,
     "ps": cmd_ps,
+    "exec": cmd_exec,
+    "execroot": cmd_execroot,
+    "execall": cmd_execall,
+    "appstatus": cmd_appstatus,
+    "dbstatus": cmd_dbstatus,
+    "sshwho": cmd_sshwho,
+    "restartappall": cmd_restartappall,
+    "push": cmd_push,
+    "pushdir": cmd_pushdir,
+    "collect": cmd_collect,
+    "health": cmd_health,
+    "backup": cmd_backup,
+    "restore": cmd_restore,
 }
 
 

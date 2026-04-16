@@ -17,7 +17,7 @@ ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
 # 6. Python 라이브러리 (필요 패키지 통합 설치)
-RUN pip install --no-cache-dir flask flask-socketio eventlet pymysql flask-sqlalchemy
+RUN pip install --no-cache-dir flask flask-socketio eventlet pymysql flask-sqlalchemy gunicorn
 
 # 7. SSH 및 시스템 설정
 RUN mkdir -p /var/run/sshd /run/mysqld && \
@@ -129,7 +129,9 @@ fi
 # 학생 환경 설정 (.bashrc)
 # Remote-SSH 비대화형 셸 출력 충돌 방지를 위해 MOTD는 인터랙티브 셸에서만 출력
 sed -i '/cat \/etc\/motd/d' /home/$STUDENT_ID/.bashrc
+sed -i '/shared\/NOTICE.txt/d' /home/$STUDENT_ID/.bashrc
 grep -qxF '[[ $- == *i* ]] && clear && cat /etc/motd' /home/$STUDENT_ID/.bashrc || echo '[[ $- == *i* ]] && clear && cat /etc/motd' >> /home/$STUDENT_ID/.bashrc
+grep -qxF '[ -f "$HOME/shared/NOTICE.txt" ] && echo "" && cat "$HOME/shared/NOTICE.txt"' /home/$STUDENT_ID/.bashrc || echo '[ -f "$HOME/shared/NOTICE.txt" ] && echo "" && cat "$HOME/shared/NOTICE.txt"' >> /home/$STUDENT_ID/.bashrc
 grep -qxF "alias mysql='mysql -h 127.0.0.1 -u $STUDENT_ID -p'" /home/$STUDENT_ID/.bashrc || echo "alias mysql='mysql -h 127.0.0.1 -u $STUDENT_ID -p'" >> /home/$STUDENT_ID/.bashrc
 grep -qxF 'cd "$HOME"' /home/$STUDENT_ID/.bashrc || echo 'cd "$HOME"' >> /home/$STUDENT_ID/.bashrc
 grep -qxF 'export APP_LOG_DIR="/var/log/student-apps/$STUDENT_ID"' /home/$STUDENT_ID/.bashrc || echo 'export APP_LOG_DIR="/var/log/student-apps/$STUDENT_ID"' >> /home/$STUDENT_ID/.bashrc
@@ -138,7 +140,9 @@ grep -qxF "PS1='\\[\\e[01;32m\\]\\u@\\h\\[\\e[00m\\]:\\[\\e[01;34m\\]\\w\\[\\e[0
 
 if [ "$STUDENT_ID" = "s0000000" ]; then
     sed -i '/cat \/etc\/motd/d' /home/omni/.bashrc
+    sed -i '/shared\/NOTICE.txt/d' /home/omni/.bashrc
     grep -qxF '[[ $- == *i* ]] && clear && cat /etc/motd' /home/omni/.bashrc || echo '[[ $- == *i* ]] && clear && cat /etc/motd' >> /home/omni/.bashrc
+    grep -qxF '[ -f "$HOME/shared/NOTICE.txt" ] && echo "" && cat "$HOME/shared/NOTICE.txt"' /home/omni/.bashrc || echo '[ -f "$HOME/shared/NOTICE.txt" ] && echo "" && cat "$HOME/shared/NOTICE.txt"' >> /home/omni/.bashrc
     grep -qxF 'alias mysql="mysql -h 127.0.0.1 -u omni -p"' /home/omni/.bashrc || echo 'alias mysql="mysql -h 127.0.0.1 -u omni -p"' >> /home/omni/.bashrc
     grep -qxF 'cd "$HOME"' /home/omni/.bashrc || echo 'cd "$HOME"' >> /home/omni/.bashrc
     grep -qxF 'export APP_LOG_DIR="/var/log/student-apps/omni"' /home/omni/.bashrc || echo 'export APP_LOG_DIR="/var/log/student-apps/omni"' >> /home/omni/.bashrc
@@ -180,6 +184,12 @@ if [ "$STUDENT_ID" = "s0000000" ]; then
     mkdir -p "/var/log/student-apps/omni"
     chown -R "omni":"omni" "/var/log/student-apps/omni"
     chmod 700 "/var/log/student-apps/omni"
+
+    # 관리자 계정에서도 공용 자료 폴더를 동일 경로(~/shared)로 사용
+    if [ -d "/home/s0000000/shared" ]; then
+        ln -sfn /home/s0000000/shared /home/omni/shared
+        chown -h "omni":"omni" /home/omni/shared
+    fi
 
     # omni CLI를 omni 계정 PATH에서 항상 실행 가능하도록 등록
     if [ -f "/home/s0000000/omni" ]; then

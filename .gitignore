@@ -1,0 +1,6 @@
+# .gitignore
+.vscode-server/
+**/node
+**/bin/
+npm/letsencrypt/
+**/.vscode-server/

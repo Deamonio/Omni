@@ -653,13 +653,13 @@ services:
       - "40000:3306"
       - "50000:7681"
     environment:
-      - STUDENT_ID=s0000000
+      - STUDENT_ID=omni
       - USER_PASS=rai1235
       - DB_ROOT_PASS=admin1234
     volumes:
-      - ./students/0000000:/home/s0000000
-      - ./shared:/home/s0000000/shared:ro
-      - ./student_logs/0000000:/var/log/student-apps/s0000000
+      - ./students/0000000:/home/omni
+      - ./shared:/home/omni/shared
+      - ./student_logs/0000000:/var/log/student-apps/omni
       - ./students/0000000/omni:/usr/local/bin/omni
       - /var/run/docker.sock:/var/run/docker.sock
       - ./:/omni_root
@@ -673,7 +673,7 @@ services:
     restart: always
 
   dashboard:
-    image: flask-mysql-ssh
+    build: .
     container_name: dashboard
     ports:
       - "8080:80"
@@ -681,7 +681,7 @@ services:
       - ./dashboard:/app
       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app
-    command: python -u app.py
+    command: gunicorn -w 4 -b 0.0.0.0:80 app:app
     user: root
     restart: always
 
@@ -696,3 +696,8 @@ services:
       - ./npm/data:/data
       - ./npm/letsencrypt:/etc/letsencrypt
     restart: always
+    networks:
+      - default
+    environment:
+      - DB_MYSQL_HOST=db
+      - DB_MYSQL_PORT=3306
