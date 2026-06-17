@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 기존 NPM 프록시 호스트에 Let's Encrypt SSL 자동 발급
-- 이미 등록된 {학번}.robotandi.deamon.io 29개에 SSL 적용
+- 이미 등록된 {학번}.rai.cortie.io 29개에 SSL 적용
 - HTTP-01 Challenge 방식 (DNS 이전 불필요)
 - Le't Encrypt rate limit 대비 호스트당 5초 간격
 """
@@ -9,7 +9,7 @@ import requests, getpass, sys, time, os
 
 NPM_URL = "http://localhost:81"
 NPM_EMAIL = "hyun0810d@gmail.com"
-DOMAIN_SUFFIX = "robotandi.deamon.io"
+DOMAIN_SUFFIX = "rai.cortie.io"
 
 def get_token(password):
     r = requests.post(f"{NPM_URL}/api/tokens", json={
@@ -70,7 +70,7 @@ def main():
         if not domains:
             continue
         d = domains[0]
-        # 학번 패턴: 숫자7자리.robotandi.deamon.io, 아직 SSL 없는 것
+        # 학번 패턴: 숫자7자리.rai.cortie.io, 아직 SSL 없는 것
         if d.endswith(f".{DOMAIN_SUFFIX}") and h.get("certificate_id", 0) == 0:
             targets.append(h)
 

@@ -4,3 +4,21 @@
 **/bin/
 npm/letsencrypt/
 **/.vscode-server/
+.mail_env
+.artifacts/
+
+# Runtime and local artifacts
+.venv/
+**/.venv/
+**/.pm2/
+**/.cache/
+**/.vscode/
+**/.dotnet/
+**/__pycache__/
+**/*.pyc
+**/.bash_history
+**/.mariadb_history
+**/.viminfo
+**/app.log
+student_logs/
+npm/data/logs/

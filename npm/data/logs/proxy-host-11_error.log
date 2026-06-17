@@ -1,2 +1,0 @@
-2026/04/15 23:22:41 [error] 290#290: *9722 student08 could not be resolved (2: Server failure), client: 104.28.253.79, server: 2201403.robotandi.deamon.io, request: "GET / HTTP/1.1", host: "2201403.robotandi.deamon.io"
-2026/04/16 09:33:12 [error] 310#310: *19000 student08 could not be resolved (2: Server failure), client: 209.38.223.198, server: 2201403.robotandi.deamon.io, request: "GET /wp-login.php HTTP/1.1", host: "2201403.robotandi.deamon.io"

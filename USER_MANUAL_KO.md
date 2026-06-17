@@ -25,11 +25,11 @@
 ### 2.1 학생 계정
 - SSH 접속 형식
   ```
-  ssh s학번@robotandi.deamon.io
+  ssh s학번@rai.cortie.io
   ```
 - 웹 접속 형식
   ```
-  https://학번.robotandi.deamon.io
+  https://학번.rai.cortie.io
   ```
 - 초기 비밀번호는 배포 시 개별 안내된 값을 사용하세요.
 
@@ -48,7 +48,7 @@
    ```
 4. 브라우저에서 본인 주소 접속
    ```
-   https://학번.robotandi.deamon.io
+   https://학번.rai.cortie.io
    ```
 
 참고:
@@ -87,7 +87,7 @@
 - 중요한 결과물은 개인 PC에도 수시 백업하세요.
 - 대시보드에서 학번별 홈 디렉토리 전체를 ZIP으로 다운로드할 수 있습니다.
   ```
-  https://robotandi.deamon.io
+  https://rai.cortie.io
   ```
   다운로드 시 본인 비밀번호(SSH 비밀번호와 동일)가 필요합니다.
 
@@ -122,7 +122,7 @@
    ```
 3. 주소 오타 확인
    ```
-   https://학번.robotandi.deamon.io
+   https://학번.rai.cortie.io
    ```
 
 ### 8.3 DB 접속 실패
@@ -146,7 +146,7 @@
 ### 9.1 관리자(omni) SSH 계정
 - SSH 접속
   ```
-  ssh omni@robotandi.deamon.io
+  ssh omni@rai.cortie.io
   ```
 - 계정 정보
 
@@ -164,7 +164,7 @@
 ### 9.2 관리 대시보드 (웹)
 - 접속 주소
   ```
-  https://robotandi.deamon.io
+  https://rai.cortie.io
   ```
 - 기능
   - 학생 29명의 실습 서버 접속 상태 실시간 모니터링
@@ -324,6 +324,8 @@ omni --help
 | `omni execall <command...>` | 전체 학생 컨테이너에 같은 명령 일괄 실행 | `omni execall 'whoami'` |
 | `omni appstatus` | 전체 학생의 `app.py` 실행 여부 조회 | `omni appstatus` |
 | `omni dbstatus` | 전체 학생/관리자 컨테이너의 MySQL 상태 조회 | `omni dbstatus` |
+| `omni reset <slot\|학번\|s학번> [--yes]` | 해당 학생 환경 완전 초기화(홈/로그/설치/DB 상태) | `omni reset s2501125 --yes` |
+| `omni reset --all [--yes]` | 전체 학생 환경 완전 초기화 | `omni reset --all --yes` |
 
 `omni create`, `omni assign`, `omni id` 실행 시 자동 동기화 항목:
 - `dashboard/students.json`
@@ -339,6 +341,7 @@ omni --help
 주의:
 - 학생 로그인 ID는 반드시 `s` + 7자리 학번 형식이어야 합니다. (예: `s2501125`)
 - `omni destroy`는 학생 홈 폴더까지 삭제하므로 실행 전 백업 여부를 반드시 확인하세요.
+- `omni reset`은 학생 홈/로그와 컨테이너 내부 설치/DB 상태를 초기화합니다. 제출물이 남아 있어야 한다면 실행 전 반드시 백업하세요.
 - 관리자 슬롯(29, `omni`)은 `assign/del/destroy` 대상이 아닙니다.
 - `omni execall` 은 모든 학생 컨테이너에 동일 명령을 보내므로, 삭제/이동 명령(`rm`, `mv`)은 특히 주의해서 사용하세요.
 
@@ -458,7 +461,7 @@ cat /home/rai/deamon/Omni/shared/NOTICE.txt
 
 [제출 방법]
 - 완성된 app.py를 홈 디렉토리에 저장하면 됩니다.
-- 대시보드(https://robotandi.deamon.io)에서 다운로드 가능합니다.
+- 대시보드(https://rai.cortie.io)에서 다운로드 가능합니다.
 
 ============================================================
 ```
@@ -469,7 +472,7 @@ cat /home/rai/deamon/Omni/shared/NOTICE.txt
 
 ### 12.1 대시보드를 통한 다운로드 (권장)
 
-1. `https://robotandi.deamon.io` 접속
+1. `https://rai.cortie.io` 접속
 2. 학생 목록에서 수거할 학생의 **다운로드** 버튼 클릭
 3. 해당 학생의 비밀번호 입력 (SSH 비밀번호와 동일)
 4. 확인 후 홈 디렉토리 전체가 ZIP 파일로 자동 다운로드됨
@@ -525,13 +528,13 @@ cat /home/rai/deamon/Omni/student_logs/2501125/app.log
 
 - [ ] 대시보드 접속 및 학생 상태 확인
   ```
-  https://robotandi.deamon.io
+  https://rai.cortie.io
   ```
   → 실습 중인 학생은 초록 점(🟢), 오프라인은 흰 점(⚪)으로 표시됩니다.
 
 - [ ] omni 계정 SSH 접속 테스트
   ```
-  ssh omni@robotandi.deamon.io
+  ssh omni@rai.cortie.io
   ```
 
 - [ ] shared 파일 정상 마운트 여부

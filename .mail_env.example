@@ -1,0 +1,9 @@
+# Copy this file to .mail_env and set real values.
+# chmod 600 .mail_env
+
+SMTP_HOST=smtp.naver.com
+SMTP_PORT=587
+SMTP_USER=your_naver_id@naver.com
+SMTP_PASS=your_smtp_or_app_password
+MAIL_FROM=your_naver_id@naver.com
+MAIL_TO=robotandi@naver.com

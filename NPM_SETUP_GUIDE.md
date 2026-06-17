@@ -33,8 +33,8 @@
 - **계정 비밀번호**: [NPM 관리 페이지에서 확인]
 
 ### 도메인 정보
-- **메인 도메인**: `robotandi.deamon.io`
-- **학생 도메인**: `{학번}.robotandi.deamon.io` (예: `2501125.robotandi.deamon.io`)
+- **메인 도메인**: `rai.cortie.io`
+- **학생 도메인**: `{학번}.rai.cortie.io` (예: `2501125.rai.cortie.io`)
 - **DNS 관제사**: Spaceship (네임서버: `launch1.spaceship.net`)
 
 ---
@@ -82,7 +82,7 @@ curl -s -X POST http://localhost:81/api/tokens \
 
 ### 필요한 레코드
 
-학생 서브도메인(`2501125.robotandi.deamon.io` 등)이 서버로 연결되려면 **와일드카드 CNAME**.
+학생 서브도메인(`2501125.rai.cortie.io` 등)이 서버로 연결되려면 **와일드카드 CNAME**.
 
 ### Spaceship 관리 콘솔에서 수행
 
@@ -103,7 +103,7 @@ curl -s -X POST http://localhost:81/api/tokens \
 
 ```bash
 # 전파된 IP 확인
-dig +short 2501125.robotandi.deamon.io
+dig +short 2501125.rai.cortie.io
 
 # 출력 예시: 119.192.101.236
 ```
@@ -130,17 +130,17 @@ python3 npm_register.py
 **출력 예시:**
 ```
 NPM 프록시 호스트 자동 등록 [HTTP only]
-대상: 29명 → {s_id}.robotandi.deamon.io
+대상: 29명 → {s_id}.rai.cortie.io
 
 NPM 비밀번호: 
 토큰 발급 성공
 
 기존 등록된 도메인 2개 확인
 
-  OK    2501125.robotandi.deamon.io -> student01:5000
-  OK    2501111.robotandi.deamon.io -> student02:5000
+  OK    2501125.rai.cortie.io -> student01:5000
+  OK    2501111.rai.cortie.io -> student02:5000
   ...
-  OK    0000000.robotandi.deamon.io -> student29:5000
+  OK    0000000.rai.cortie.io -> student29:5000
 
 완료: 등록 29개 / 스킵 0개 / 실패 0개
 ```
@@ -156,7 +156,7 @@ NPM 비밀번호:
 **DNS 전파 검증** (필수)
 
 ```bash
-dig +short 2501125.robotandi.deamon.io @8.8.8.8
+dig +short 2501125.rai.cortie.io @8.8.8.8
 # 출력: 119.192.101.236 (IP가 나와야 함)
 ```
 
@@ -176,17 +176,17 @@ python3 npm_ssl.py
 **출력 예시:**
 ```
 NPM SSL 자동 발급 스크립트
-대상: *.robotandi.deamon.io (학생 도메인만)
+대상: *.rai.cortie.io (학생 도메인만)
 
 NPM 비밀번호: 
 토큰 발급 성공
 
 SSL 미적용 학생 도메인: 29개
 
-[01/29] 0000000.robotandi.deamon.io ... OK ✓
-[02/29] 2201130.robotandi.deamon.io ... OK ✓
+[01/29] 0000000.rai.cortie.io ... OK ✓
+[02/29] 2201130.rai.cortie.io ... OK ✓
 ...
-[29/29] 2501076.robotandi.deamon.io ... OK ✓
+[29/29] 2501076.rai.cortie.io ... OK ✓
 
 완료: 성공 29개 / 실패 0개
 ```
@@ -218,11 +218,11 @@ conn.close()
 **예상 출력:**
 ```
 SSL 발급 완료: 31/32
-  ID:1 ✓ SSL ["robotandi.deamon.io"]
-  ID:2 ✓ SSL ["admin.robotandi.deamon.io"]
-  ID:3 ✗ HTTP ["*.robotandi.deamon.io"]
-  ID:4 ✓ SSL ["2501125.robotandi.deamon.io"]
-  ID:5 ✓ SSL ["2501111.robotandi.deamon.io"]
+  ID:1 ✓ SSL ["rai.cortie.io"]
+  ID:2 ✓ SSL ["admin.rai.cortie.io"]
+  ID:3 ✗ HTTP ["*.rai.cortie.io"]
+  ID:4 ✓ SSL ["2501125.rai.cortie.io"]
+  ID:5 ✓ SSL ["2501111.rai.cortie.io"]
   ...
 ```
 
@@ -238,8 +238,8 @@ SSL 발급 완료: 31/32
 ### 3단계: 브라우저에서 접속 테스트
 
 ```
-https://2501125.robotandi.deamon.io  (Baltukov Nomto)
-https://2301104.robotandi.deamon.io  (김광호)
+https://2501125.rai.cortie.io  (Baltukov Nomto)
+https://2301104.rai.cortie.io  (김광호)
 ```
 
 ✅ **SSL 인증서 경고 없이 HTTPS 정상 로드**
@@ -296,10 +296,10 @@ cat ./npm/data/logs/letsencrypt.log.1 | tail -50
 
 ```bash
 # Google DNS로 확인
-dig +short {학번}.robotandi.deamon.io @8.8.8.8
+dig +short {학번}.rai.cortie.io @8.8.8.8
 
 # 권위 네임서버로 확인
-dig +short {학번}.robotandi.deamon.io @launch1.spaceship.net
+dig +short {학번}.rai.cortie.io @launch1.spaceship.net
 ```
 
 ---
@@ -329,7 +329,7 @@ dig +short {학번}.robotandi.deamon.io @launch1.spaceship.net
 
 ```bash
 # 1. DNS 전파 확인
-dig +short 2501125.robotandi.deamon.io @8.8.8.8
+dig +short 2501125.rai.cortie.io @8.8.8.8
 
 # 2. 프록시 호스트 등록
 cd /home/rai/deamon/Omni
@@ -348,7 +348,7 @@ python3 -c "import sqlite3; conn=sqlite3.connect('./npm/data/database.sqlite'); 
 
 ### 목적
 
-학생이 `ssh s2501125@robotandi.deamon.io` 로 접속하면 자동으로 해당 학번의 Docker 컨테이너 SSH 포트(`localhost:21125`)로 연결
+학생이 `ssh s2501125@rai.cortie.io` 로 접속하면 자동으로 해당 학번의 Docker 컨테이너 SSH 포트(`localhost:21125`)로 연결
 
 ### 설정 스크립트
 
@@ -366,7 +366,7 @@ python3 -c "import sqlite3; conn=sqlite3.connect('./npm/data/database.sqlite'); 
 
 ```bash
 # 일반적인 SSH 접속
-ssh s2501125@robotandi.deamon.io
+ssh s2501125@rai.cortie.io
 
 # 비밀번호 입력 (nomto)
 Password: nomto
@@ -374,9 +374,9 @@ Password: nomto
 
 **자동 라우팅:**
 ```
-ssh s2501125@robotandi.deamon.io → localhost:21125 (student01:SSH)
-ssh s2501111@robotandi.deamon.io → localhost:21111 (student02:SSH)
-ssh s2301104@robotandi.deamon.io → localhost:21104 (student07:SSH)
+ssh s2501125@rai.cortie.io → localhost:21125 (student01:SSH)
+ssh s2501111@rai.cortie.io → localhost:21111 (student02:SSH)
+ssh s2301104@rai.cortie.io → localhost:21104 (student07:SSH)
 ```
 
 ### sshd_config 설정 구조

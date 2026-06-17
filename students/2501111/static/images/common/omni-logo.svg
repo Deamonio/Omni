@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="72" viewBox="0 0 240 72" role="img" aria-label="OMNI logo">
+  <rect width="240" height="72" rx="12" fill="#0B2A4A"/>
+  <circle cx="36" cy="36" r="14" fill="#4BC0C8"/>
+  <text x="62" y="44" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="28" font-weight="700">OMNI</text>
+</svg>

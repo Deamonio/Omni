@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 | A+ Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+</head>
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>로그인</h1>
+            <form action="/login" method="POST">
+                <label for="login_id">아이디</label>
+                <input id="login_id" type="text" name="login_id" required>
+
+                <label for="password">비밀번호</label>
+                <input id="password" type="password" name="password" required>
+
+                <button type="submit">로그인</button>
+            </form>
+            <div class="links">
+                <a href="{{ url_for('signup') }}">회원가입</a> | <a href="{{ url_for('home') }}">홈</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

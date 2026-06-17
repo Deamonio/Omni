@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 | A+ Finder</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; }
+        .wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .card { width: 100%; max-width: 420px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; }
+        h1 { margin: 0 0 16px; font-size: 22px; }
+        label { display: block; font-size: 14px; margin-bottom: 6px; }
+        input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 12px; }
+        button { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; }
+        .links { margin-top: 14px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>회원가입</h1>
+            <form action="{{ url_for('signup') }}" method="POST">
+                <label for="login_id">아이디</label>
+                <input id="login_id" type="text" name="login_id" required>
+
+                <label for="name">성함</label>
+                <input id="name" type="text" name="name" required>
+
+                <label for="password">비밀번호</label>
+                <input id="password" type="password" name="password" required>
+
+                <label for="phone">연락처</label>
+                <input id="phone" type="text" name="phone" placeholder="010-0000-0000">
+
+                <label for="email">이메일</label>
+                <input id="email" type="email" name="email" placeholder="example@mail.com">
+
+                <button type="submit">가입</button>
+            </form>
+            <div class="links">
+                <a href="{{ url_for('login') }}">로그인</a> | <a href="{{ url_for('home') }}">홈</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

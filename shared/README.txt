@@ -3,8 +3,8 @@
 =====================================================
 
 [ 접속 방법 ]
-  SSH:  ssh s학번@robotandi.deamon.io
-  Web:  http://학번.robotandi.deamon.io
+  SSH:  ssh s학번@rai.cortie.io
+  Web:  http://학번.rai.cortie.io
 
 [ 홈 디렉토리 ]
   로그인 시 자동으로 /home/s학번 으로 이동합니다.
@@ -14,7 +14,7 @@
   $ cd ~
   $ runapp                # 권장: 로그를 홈 외부 경로에 저장
   $ python3 app.py        # 일반 실행
-  브라우저에서 http://학번.robotandi.deamon.io 로 접속
+  브라우저에서 http://학번.rai.cortie.io 로 접속
 
 [ MySQL 접속 ]
   $ mysql                 # alias 설정 완료 (학번 계정으로 자동 접속)

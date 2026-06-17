@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 | A+ Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+</head>
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>회원가입</h1>
+            <form action="{{ url_for('signup') }}" method="POST">
+                <label for="login_id">아이디</label>
+                <input id="login_id" type="text" name="login_id" required>
+
+                <label for="name">성함</label>
+                <input id="name" type="text" name="name" required>
+
+                <label for="password">비밀번호</label>
+                <input id="password" type="password" name="password" required>
+
+                <label for="phone">연락처</label>
+                <input id="phone" type="text" name="phone" placeholder="010-0000-0000">
+
+                <label for="email">이메일</label>
+                <input id="email" type="email" name="email" placeholder="example@mail.com">
+
+                <button type="submit">가입</button>
+            </form>
+            <div class="links">
+                <a href="{{ url_for('login') }}">로그인</a> | <a href="{{ url_for('home') }}">홈</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

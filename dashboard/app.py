@@ -37,6 +37,7 @@ REACT_BUILD_DIR = os.path.join(os.path.dirname(__file__), 'static', 'react-dashb
 app = Flask(__name__)
 app.secret_key = "kbu_sql_lab_secret_key_2026" # 세션 암호화 키
 socketio = SocketIO(app, cors_allowed_origins="*")
+APP_GUARD_LOG_ROOT = Path(__file__).resolve().parent.parent / "student_logs"
 
 # 메인 대시보드: 템플릿 기반
 @app.route('/')
@@ -46,7 +47,12 @@ def dashboard():
 # 상태 API
 @app.route('/api/status')
 def api_status():
-    return jsonify({"students": get_status()})
+    return jsonify({"students": get_status(), "app_guard_alerts": get_app_guard_alerts()})
+
+
+@app.route('/api/alerts/app-guard')
+def api_app_guard_alerts():
+    return jsonify({"alerts": get_app_guard_alerts()})
 
 # 학생별 컨테이너 상태 반환
 def get_status():
@@ -84,13 +90,59 @@ def get_status():
         })
     return result
 
+
+def get_app_guard_alerts(limit=20):
+    alerts = []
+    if not APP_GUARD_LOG_ROOT.exists():
+        return alerts
+
+    for sid_dir in APP_GUARD_LOG_ROOT.iterdir():
+        if not sid_dir.is_dir():
+            continue
+
+        log_file = sid_dir / "app_guard.log"
+        if not log_file.exists():
+            continue
+
+        try:
+            lines = log_file.read_text(encoding="utf-8", errors="ignore").splitlines()
+        except OSError:
+            continue
+
+        for line in lines[-30:]:
+            text = line.strip()
+            if not text:
+                continue
+
+            ts = None
+            msg = text
+            if text.startswith("[") and "]" in text:
+                raw_ts = text[1:text.find("]")]
+                try:
+                    ts = datetime.strptime(raw_ts, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    ts = None
+                msg = text[text.find("]") + 1:].strip()
+
+            alerts.append({
+                "student_id": sid_dir.name,
+                "timestamp": ts.strftime("%Y-%m-%d %H:%M:%S") if ts else "",
+                "message": msg,
+                "sort_key": ts.timestamp() if ts else 0,
+            })
+
+    alerts.sort(key=lambda item: item["sort_key"], reverse=True)
+    for item in alerts:
+        item.pop("sort_key", None)
+    return alerts[:limit]
+
 @socketio.on('connect')
 def handle_connect(auth=None):
-    socketio.emit('update', {'students': get_status()})
+    socketio.emit('update', {'students': get_status(), 'app_guard_alerts': get_app_guard_alerts()})
 
 def status_refresher():
     while True:
-        socketio.emit('update', {'students': get_status()})
+        socketio.emit('update', {'students': get_status(), 'app_guard_alerts': get_app_guard_alerts()})
         time.sleep(2)
 
 if __name__ == '__main__':

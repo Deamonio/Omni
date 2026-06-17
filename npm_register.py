@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 NPM 프록시 호스트 자동 등록 스크립트
-https://{s_id}.robotandi.deamon.io -> student{i:02d}:5000
+https://{s_id}.rai.cortie.io -> student{i:02d}:5000
 """
 import requests, getpass, sys, time
 
 NPM_URL = "http://localhost:81"
 NPM_EMAIL = "hyun0810d@gmail.com"
-DOMAIN_SUFFIX = "robotandi.deamon.io"
+DOMAIN_SUFFIX = "rai.cortie.io"
 
 STUDENT_DATA = [
     ("Baltukov Nomto",              "2501125", "student01"),

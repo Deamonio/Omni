@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 센터 | A+ Finder</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f7; color: #222; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        input, button, textarea { font-family: inherit; }
+        input[type="number"], input[type="text"], textarea { border: 1px solid #ccc; border-radius: 6px; padding: 6px; }
+        button { border: 1px solid #ccc; background: #fff; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+        .hidden { display: none; }
+        .comment-box { margin-top: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+        .muted { color: #666; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <div class="top">
+            <h1>관리자 센터</h1>
+            <div>
+                <span class="muted">{{ session['user_name'] }}</span>
+                <a href="{{ url_for('logout') }}">로그아웃</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <p>학생 수: {{ users|length }}명</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>이름</th>
+                        <th>SQL</th>
+                        <th>Network</th>
+                        <th>Programming</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <form action="{{ url_for('edit_grade', student_id=user.student_id) }}" method="POST">
+                            <td>{{ user.student_id }}</td>
+                            <td>{{ user.name }}</td>
+                            <td>
+                                <input type="number" name="sql" value="{{ user.grade.sql_score }}" style="width: 70px;">
+                                <div class="muted">{{ get_grade(user.grade.sql_score) }}</div>
+                            </td>
+                            <td>
+                                <input type="number" name="network" value="{{ user.grade.network_score }}" style="width: 70px;">
+                                <div class="muted">{{ get_grade(user.grade.network_score) }}</div>
+                            </td>
+                            <td>
+                                <input type="number" name="programming" value="{{ user.grade.programming_score }}" style="width: 70px;">
+                                <div class="muted">{{ get_grade(user.grade.programming_score) }}</div>
+                            </td>
+                            <td>
+                                <button type="submit">저장</button>
+                                <button type="button" onclick="toggleComments('{{ user.student_id }}')">의견</button>
+                            </td>
+                        </form>
+                    </tr>
+                    <tr id="comment-section-{{ user.student_id }}" class="hidden">
+                        <td colspan="6">
+                            <div class="comment-box">
+                                <p><strong>{{ user.name }}</strong> 의견</p>
+
+                                {% set cms = get_comments(user.student_id) %}
+                                {% if cms %}
+                                    {% for c in cms %}
+                                    <div class="comment-box" style="background: #fff; margin-top: 8px;">
+                                        <div class="muted">{{ c.author.name }} · {{ c.created_at.strftime('%m-%d %H:%M') }}</div>
+                                        <div id="comment-text-{{ c.id }}">{{ c.content }}</div>
+
+                                        <div style="margin-top: 8px;">
+                                            {% if c.student_id == session['user_id'] %}
+                                            <button type="button" onclick="showEditForm('{{ c.id }}')">수정</button>
+                                            {% endif %}
+                                            <form action="{{ url_for('delete_comment', comment_id=c.id) }}" method="POST" onsubmit="return confirm('정말 삭제하시겠습니까?');" style="display: inline;">
+                                                <button type="submit">삭제</button>
+                                            </form>
+                                        </div>
+
+                                        <form id="edit-form-{{ c.id }}" action="{{ url_for('edit_comment', comment_id=c.id) }}" method="POST" class="hidden" style="margin-top: 8px;">
+                                            <textarea name="content" required rows="3" style="width: 100%; box-sizing: border-box;">{{ c.content }}</textarea>
+                                            <div style="margin-top: 8px;">
+                                                <button type="button" onclick="hideEditForm('{{ c.id }}')">취소</button>
+                                                <button type="submit">저장</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="muted">의견이 없습니다.</p>
+                                {% endif %}
+
+                                <form action="{{ url_for('add_comment', target_id=user.student_id) }}" method="POST" style="margin-top: 10px;">
+                                    <input type="text" name="content" required placeholder="의견 입력" style="width: 75%;">
+                                    <button type="submit">등록</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+    function toggleComments(studentId) {
+        const section = document.getElementById('comment-section-' + studentId);
+        section.classList.toggle('hidden');
+    }
+    function showEditForm(id) {
+        document.getElementById('comment-text-' + id).classList.add('hidden');
+        document.getElementById('edit-form-' + id).classList.remove('hidden');
+    }
+    function hideEditForm(id) {
+        document.getElementById('comment-text-' + id).classList.remove('hidden');
+        document.getElementById('edit-form-' + id).classList.add('hidden');
+    }
+    </script>
+</body>
+</html>

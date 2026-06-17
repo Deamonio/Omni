@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A+ Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+</head>
+<body>
+    <main class="container">
+        <section class="card">
+            <p align=center><img src="../static/images/kbu_logo.png" alt="KBU 로고" width=150></p>
+        </section>
+        <section class="card">
+            <p align=center><img src="../static/images/kbu_logo.png" alt="KBU 로고" width=150></p>
+        </section>
+        <section class="card">
+            <h1>A+ Finder</h1>
+            <p>성적 조회 서비스</p>
+            <div class="actions">
+                <a class="button" href="{{ url_for('login') }}">로그인</a>
+                <a class="button" href="{{ url_for('signup') }}">회원가입</a>
+            </div>
+        </section>
+
+        <section class="card mt-16">
+            <h2>학점 기준</h2>
+            <ul>
+                <li>95 - 100 : A+</li>
+                <li>90 - 94 : A</li>
+                <li>85 - 89 : B+</li>
+                <li>80 - 84 : B</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

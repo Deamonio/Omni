@@ -5,14 +5,14 @@
 |1,4
 
 # Value of 'encoding' when this file was written
-*encoding=utf-8
+*encoding=latin1
 
 
 # hlsearch on (H) or off (h):
 ~h
 # Command Line History (newest to oldest):
 :wq
-|2,0,1774766467,,"wq"
+|2,0,1780988258,,"wq"
 
 # Search String History (newest to oldest):
 
@@ -25,26 +25,46 @@
 # Registers:
 
 # File marks:
-'0  11  12  ~/app.py
-|4,48,11,12,1774766467,"~/app.py"
-'1  13  38  ~/app.py
-|4,49,13,38,1774763605,"~/app.py"
+'0  115  0  ~/templates/student.html
+|4,48,115,0,1780988258,"~/templates/student.html"
+'1  11  12  ~/app.py
+|4,49,11,12,1774766467,"~/app.py"
 '2  13  38  ~/app.py
 |4,50,13,38,1774763605,"~/app.py"
+'3  13  38  ~/app.py
+|4,51,13,38,1774763605,"~/app.py"
 
 # Jumplist (newest first):
+-'  115  0  ~/templates/student.html
+|4,39,115,0,1780988258,"~/templates/student.html"
+-'  1  0  ~/templates/student.html
+|4,39,1,0,1780988133,"~/templates/student.html"
+-'  11  12  ~/app.py
+|4,39,11,12,1774766467,"~/app.py"
 -'  11  12  ~/app.py
 |4,39,11,12,1774766467,"~/app.py"
 -'  13  38  ~/app.py
 |4,39,13,38,1774766462,"~/app.py"
+-'  13  38  ~/app.py
+|4,39,13,38,1774766462,"~/app.py"
+-'  13  38  ~/app.py
+|4,39,13,38,1774763605,"~/app.py"
 -'  13  38  ~/app.py
 |4,39,13,38,1774763605,"~/app.py"
 -'  1  0  ~/app.py
 |4,39,1,0,1774763570,"~/app.py"
 -'  1  0  ~/app.py
 |4,39,1,0,1774763570,"~/app.py"
+-'  1  0  ~/app.py
+|4,39,1,0,1774763570,"~/app.py"
+-'  1  0  ~/app.py
+|4,39,1,0,1774763570,"~/app.py"
 
 # History of marks within files (newest to oldest):
+
+> ~/templates/student.html
+	*	1780988257	0
+	"	115	0
 
 > ~/app.py
 	*	1774766466	0

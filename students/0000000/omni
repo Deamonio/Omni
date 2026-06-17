@@ -23,6 +23,8 @@ Usage:
     omni health
     omni backup
     omni restore
+    omni reset <slot|학번|s학번> [--yes]
+    omni reset --all [--yes]
 
 Notes:
     - 학생 로그인 ID는 반드시 s학번 형식이어야 합니다. (예: s2501125)
@@ -36,6 +38,7 @@ import json
 import re
 import shlex
 import subprocess
+import shutil
 from datetime import datetime
 
 def cmd_restartappall(_args: list[str]) -> None:
@@ -139,6 +142,115 @@ def cmd_backup(_args: list[str]) -> None:
 def cmd_restore(_args: list[str]) -> None:
     print("[omni] 복구 (준비중)")
     # TODO: 특정 시점으로 복구
+
+
+def _template_app_py() -> str:
+    app_template = STUDENTS_DIR / "0000000" / "app.py"
+    if app_template.exists():
+        return app_template.read_text(encoding="utf-8")
+    return (
+        "from flask import Flask\n\n"
+        "app = Flask(__name__)\n\n"
+        "@app.route('/')\n"
+        "def home():\n"
+        "    return 'Hello, Flask!'\n\n"
+        "if __name__ == '__main__':\n"
+        "    app.run(host='0.0.0.0', debug=False)\n"
+    )
+
+
+def _wipe_dir_contents(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    for item in path.iterdir():
+        if item.is_dir() and not item.is_symlink():
+            shutil.rmtree(item)
+        else:
+            item.unlink(missing_ok=True)
+
+
+def _reset_one_student(student: dict) -> None:
+    slot = student["slot"]
+    sid = student.get("id")
+    login_id = login_id_of(student)
+    svc = container(slot)
+
+    if not sid or not login_id:
+        die(f"초기화할 학생 정보가 비어 있습니다: slot {slot}")
+    if slot == ADMIN_SLOT:
+        die("관리자 슬롯은 reset 대상이 아닙니다")
+
+    print_result_header(student)
+
+    rt = runtime_container(slot)
+    if rt:
+        run(f"docker rm -f {rt}", check=False)
+        print(f"컨테이너 초기화: {rt}")
+    else:
+        run(f"docker rm -f {svc}", check=False)
+        print(f"컨테이너 정리: {svc} (미실행 상태)")
+
+    student_home = STUDENTS_DIR / sid
+    student_logs = ROOT_DIR / "student_logs" / sid
+    _wipe_dir_contents(student_home)
+    _wipe_dir_contents(student_logs)
+
+    (student_home / "app.py").write_text(_template_app_py(), encoding="utf-8")
+    (student_home / "index.html").write_text("", encoding="utf-8")
+    print(f"학생 홈/로그 초기화: {sid}")
+
+    recreate_student_container(slot)
+    print(f"컨테이너 재생성 완료: {svc}")
+    print("✅ 초기화 완료")
+
+
+def cmd_reset(args: list[str]) -> None:
+    if not args:
+        die("사용법: omni reset <slot|학번|s학번> [--yes] | omni reset --all [--yes]")
+
+    force_yes = "--yes" in args
+    targets = [a for a in args if a != "--yes"]
+    if not targets:
+        die("초기화 대상을 지정하세요")
+
+    if targets[0] == "--all":
+        students = active_students(include_admin=False)
+        if not students:
+            print("초기화할 학생이 없습니다")
+            return
+
+        if not force_yes:
+            print("경고: 모든 학생 계정의 파일/로그/설치/DB 상태를 초기화합니다.")
+            ans = input("계속하려면 YES 입력: ").strip()
+            if ans != "YES":
+                die("사용자 취소")
+
+        ok = failed = 0
+        for student in students:
+            try:
+                _reset_one_student(student)
+                ok += 1
+            except Exception as e:
+                failed += 1
+                print(f"❌ 실패: slot {student['slot']} ({login_id_of(student)}): {e}")
+
+        print(f"요약: 성공 {ok}, 실패 {failed}")
+        if failed:
+            sys.exit(1)
+        return
+
+    student = find_student(load(), targets[0])
+    if student is None:
+        die(f"학생을 찾을 수 없습니다: {targets[0]}")
+    if student["slot"] == ADMIN_SLOT:
+        die("관리자 슬롯은 reset 대상이 아닙니다")
+
+    if not force_yes:
+        print(f"경고: {login_id_of(student)} 계정의 파일/로그/설치/DB 상태를 초기화합니다.")
+        ans = input("계속하려면 YES 입력: ").strip()
+        if ans != "YES":
+            die("사용자 취소")
+
+    _reset_one_student(student)
 
 
 STUDENTS_JSON = Path("/dashboard_data/students.json")
@@ -1179,6 +1291,7 @@ COMMANDS = {
     "health": cmd_health,
     "backup": cmd_backup,
     "restore": cmd_restore,
+    "reset": cmd_reset,
 }
 
 

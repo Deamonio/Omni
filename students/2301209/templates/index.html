@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A+ Finder</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f7; color: #222; }
+        .container { max-width: 760px; margin: 0 auto; padding: 24px; }
+        .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; }
+        h1, h2 { margin-top: 0; }
+        .actions { display: flex; gap: 10px; margin-top: 16px; }
+        .button { display: inline-block; padding: 10px 14px; border: 1px solid #ccc; border-radius: 6px; text-decoration: none; color: #111; background: #fff; }
+        ul { padding-left: 18px; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <section class="card">
+            <h1>A+ Finder</h1>
+            <p>성적 조회 서비스</p>
+            <div class="actions">
+                <a class="button" href="{{ url_for('login') }}">로그인</a>
+                <a class="button" href="{{ url_for('signup') }}">회원가입</a>
+            </div>
+        </section>
+
+        <section class="card" style="margin-top: 16px;">
+            <h2>학점 기준</h2>
+            <ul>
+                <li>95 - 100 : A+</li>
+                <li>90 - 94 : A</li>
+                <li>85 - 89 : B+</li>
+                <li>80 - 84 : B</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,8 +1,17 @@
  * Serving Flask app 'app'
- * Debug mode: off
+ * Debug mode: on
 [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5000
- * Running on http://172.18.0.20:5000
+ * Running on http://172.18.0.13:5000
 [33mPress CTRL+C to quit[0m
-172.18.0.1 - - [26/Mar/2026 12:23:57] "GET / HTTP/1.1" 200 -
+ * Restarting with stat
+Traceback (most recent call last):
+  File "/home/s2301301/app.py", line 18, in <module>
+    class User(db.Model):
+  File "/home/s2301301/app.py", line 27, in User
+    post = db.column(db.string(5))
+                     ^^^^^^^^^
+  File "/usr/local/lib/python3.11/site-packages/flask_sqlalchemy/extension.py", line 1008, in __getattr__
+    raise AttributeError(name)
+AttributeError: string

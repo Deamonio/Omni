@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 성적표 | A+ Finder</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f7; color: #222; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+        .scores { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .scores th, .scores td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .comment { border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 8px; background: #fafafa; }
+        textarea, input, button { font-family: inherit; }
+        textarea { width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; padding: 8px; }
+        button { border: 1px solid #ccc; background: #fff; border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+        .hidden { display: none; }
+        .muted { color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <div class="top">
+            <h1>내 성적표</h1>
+            <div>
+                <span class="muted">{{ session['user_name'] }} ({{ session['user_id'] }})</span>
+                <a href="{{ url_for('logout') }}">로그아웃</a>
+            </div>
+        </div>
+
+        <section class="card">
+            <p>평균 점수: <strong>{{ ((grade.sql_score + grade.network_score + grade.programming_score) / 3) | round(1) }}</strong> / 100</p>
+            <table class="scores">
+                <thead>
+                    <tr>
+                        <th>과목</th>
+                        <th>점수</th>
+                        <th>학점</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SQL</td>
+                        <td>{{ grade.sql_score }}</td>
+                        <td>{{ get_grade(grade.sql_score) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Network</td>
+                        <td>{{ grade.network_score }}</td>
+                        <td>{{ get_grade(grade.network_score) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Programming</td>
+                        <td>{{ grade.programming_score }}</td>
+                        <td>{{ get_grade(grade.programming_score) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="card">
+            <h2>의견</h2>
+            {% set comments = get_comments(grade.student_id) %}
+            {% if comments %}
+                {% for comment in comments %}
+                <div class="comment">
+                    <div class="muted">
+                        {{ comment.author.name }}
+                        {% if comment.author.is_admin %}(관리자){% endif %}
+                        · {{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </div>
+
+                    <div id="comment-display-{{ comment.id }}">{{ comment.content }}</div>
+
+                    {% if session['user_id'] == comment.student_id or session['is_admin'] %}
+                    <div style="margin-top: 8px;">
+                        {% if session['user_id'] == comment.student_id %}
+                        <button type="button" onclick="showEditForm('{{ comment.id }}')">수정</button>
+                        {% endif %}
+                        <form action="{{ url_for('delete_comment', comment_id=comment.id) }}" method="POST" onsubmit="return confirm('정말 삭제하시겠습니까?');" style="display: inline;">
+                            <button type="submit">삭제</button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                    <form id="edit-form-{{ comment.id }}" action="{{ url_for('edit_comment', comment_id=comment.id) }}" method="POST" class="hidden" style="margin-top: 8px;">
+                        <textarea name="content" required rows="4">{{ comment.content }}</textarea>
+                        <div style="margin-top: 8px;">
+                            <button type="button" onclick="hideEditForm('{{ comment.id }}')">취소</button>
+                            <button type="submit">저장</button>
+                        </div>
+                    </form>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted">등록된 의견이 없습니다.</p>
+            {% endif %}
+
+            <form action="{{ url_for('add_comment', target_id=grade.student_id) }}" method="POST" style="margin-top: 12px;">
+                <textarea name="content" required rows="4" placeholder="의견을 입력하세요."></textarea>
+                <div style="margin-top: 8px;">
+                    <button type="submit">등록</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script>
+        function showEditForm(id) {
+            document.getElementById('comment-display-' + id).classList.add('hidden');
+            document.getElementById('edit-form-' + id).classList.remove('hidden');
+        }
+        function hideEditForm(id) {
+            document.getElementById('comment-display-' + id).classList.remove('hidden');
+            document.getElementById('edit-form-' + id).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
